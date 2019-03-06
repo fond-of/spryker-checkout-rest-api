@@ -6,6 +6,8 @@ use FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\PlaceOrderProcessor;
 use FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\PlaceOrderProcessorInterface;
 use FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\QuoteCreatorByDeliveryDate;
 use FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\QuoteCreatorByDeliveryDateInterface;
+use Spryker\Client\Cart\CartClientInterface;
+use Spryker\Client\Quote\QuoteClientInterface;
 use Spryker\Zed\CheckoutRestApi\Business\CheckoutRestApiBusinessFactory as SprykerCheckoutRestApiBusinessFactory;
 use FondOfSpryker\Zed\CheckoutRestApi\CheckoutRestApiDependencyProvider;
 use Spryker\Zed\Quote\Business\QuoteFacadeInterface;
@@ -37,7 +39,9 @@ class CheckoutRestApiBusinessFactory extends SprykerCheckoutRestApiBusinessFacto
     public function createQuoteCreatorByDeliveryDate(): QuoteCreatorByDeliveryDateInterface
     {
         return new QuoteCreatorByDeliveryDate(
-            $this->getQuoteFacadeReal()
+            $this->getQuoteFacadeReal(),
+            $this->getQuoteClient(),
+            $this->getCartClient()
         );
     }
 
@@ -47,5 +51,21 @@ class CheckoutRestApiBusinessFactory extends SprykerCheckoutRestApiBusinessFacto
     public function getQuoteFacadeReal(): QuoteFacadeInterface
     {
         return $this->getProvidedDependency(CheckoutRestApiDependencyProvider::FACADE_QUOTE_REAL);
+    }
+
+    /**
+     * @return \Spryker\Zed\Quote\Business\QuoteFacadeInterface
+     */
+    public function getQuoteClient(): QuoteClientInterface
+    {
+        return $this->getProvidedDependency(CheckoutRestApiDependencyProvider::CLIENT_QUOTE);
+    }
+
+    /**
+     * @return \Spryker\Client\Cart\CartClientInterface
+     */
+    public function getCartClient(): CartClientInterface
+    {
+        return $this->getProvidedDependency(CheckoutRestApiDependencyProvider::CLIENT_CART);
     }
 }
