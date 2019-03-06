@@ -124,6 +124,6 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
             }
         }
 
-        return new RestCheckoutResponseTransfer();
+        return (new RestCheckoutResponseTransfer());
     }
 }
