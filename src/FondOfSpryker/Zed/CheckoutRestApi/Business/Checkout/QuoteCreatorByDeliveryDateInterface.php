@@ -4,24 +4,20 @@ declare(strict_types=1);
 
 namespace FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout;
 
+use Generated\Shared\Transfer\QuoteCollectionTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 
 interface QuoteCreatorByDeliveryDateInterface
 {
     /**
-     * @return \Generated\Shared\Transfer\QuoteTransfer[]
-     */
-    public function getGeneratedQuotes(): array;
-
-    /**
      * @return \Generated\Shared\Transfer\QuoteTransfer
      */
-    public function getOriginalQuote(): QuoteTransfer;
+    public function getOriginalQuoteTransfer(): QuoteTransfer;
 
     /**
      * @param \Generated\Shared\Transfer\QuoteTransfer $originalQuoteTransfer
      *
-     * @return void
+     * @return \Generated\Shared\Transfer\QuoteCollectionTransfer
      */
-    public function splitAndCreateQuotesByDeliveryDate(QuoteTransfer $originalQuoteTransfer): void;
+    public function createAndPersistChildQuotesByDeliveryDate(QuoteTransfer $originalQuoteTransfer): QuoteCollectionTransfer;
 }

@@ -1,12 +1,14 @@
 <?php
 
-namespace FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout;
+declare(strict_types=1);
+
+namespace FondOfspryker\Client\CheckoutRestApi\Zed;
 
 use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
 use Generated\Shared\Transfer\RestCheckoutResponseTransfer;
-use Spryker\Zed\CheckoutRestApi\Business\Checkout\PlaceOrderProcessorInterface as sprykerPlaceOrderProcessorInterface;
+use Spryker\Client\CheckoutRestApi\Zed\CheckoutRestApiZedStubInterface as SprykerCheckoutRestApiZedStubInterface;
 
-interface PlaceOrderProcessorInterface extends SprykerPlaceOrderProcessorInterface
+interface CheckoutRestApiZedStubInterface extends SprykerCheckoutRestApiZedStubInterface
 {
     /**
      * @param \Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer

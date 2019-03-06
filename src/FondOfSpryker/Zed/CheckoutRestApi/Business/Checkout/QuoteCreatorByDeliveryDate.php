@@ -5,74 +5,97 @@ declare(strict_types=1);
 namespace FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout;
 
 use Generated\Shared\Transfer\ItemTransfer;
+use Generated\Shared\Transfer\PersistentCartChangeTransfer;
+use Generated\Shared\Transfer\QuoteActivationRequestTransfer;
+use Generated\Shared\Transfer\QuoteCollectionTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
-use Spryker\Client\Cart\CartClientInterface;
-use Spryker\Client\Quote\QuoteClientInterface;
-use Spryker\Zed\Quote\Business\QuoteFacadeInterface;
+use Spryker\Zed\MultiCart\Business\MultiCartFacadeInterface;
+use Spryker\Zed\PersistentCart\Business\PersistentCartFacadeInterface;
 use ArrayObject;
 use RuntimeException;
 
 class QuoteCreatorByDeliveryDate implements QuoteCreatorByDeliveryDateInterface
 {
     /**
-     * @var \Spryker\Zed\Quote\Business\QuoteFacadeInterface
+     * @var \Spryker\Zed\PersistentCart\Business\PersistentCartFacadeInterface
      */
-    protected $quoteFacade;
+    protected $persistentCartFacade;
 
     /**
-     * @var \Generated\Shared\Transfer\QuoteTransfer[]
+     * @var \Spryker\Zed\MultiCart\Business\MultiCartFacadeInterface
      */
-    protected $generatedQuotes;
+    protected $multiCartFacade;
+
+    /**
+     * @var \Generated\Shared\Transfer\QuoteTransfer[]|ArrayObject
+     */
+    protected $childQuoteTransfers;
 
     /**
      * @var \Generated\Shared\Transfer\QuoteTransfer
      */
-    protected $originalQuote = [];
+    protected $originalQuoteTransfer = [];
 
     /**
      * @var \Generated\Shared\Transfer\ItemTransfer[][]
      */
-    protected $itemsByDeliveryDate = [];
+    protected $itemTransfersByDeliveryDate = [];
 
     /**
-     * @var \Spryker\Client\Quote\QuoteClientInterface
-     */
-    protected $quoteClient;
-
-    /**
-     * @var \Spryker\Client\Cart\CartClientInterface
-     */
-    protected $cartClient;
-
-    /**
-     * @param \Spryker\Zed\Quote\Business\QuoteFacadeInterface $quoteFacade
-     * @param \Spryker\Client\Quote\QuoteClientInterface $quoteClient
-     * @param \Spryker\Client\Cart\CartClientInterface $cartClient
+     * @param \Spryker\Zed\PersistentCart\Business\PersistentCartFacadeInterface
+     * @param \Spryker\Zed\MultiCart\Business\MultiCartFacadeInterface $multiCartFacade
      */
     public function __construct(
-        QuoteFacadeInterface $quoteFacade,
-        QuoteClientInterface $quoteClient,
-        CartClientInterface $cartClient
+        PersistentCartFacadeInterface $persistentCartFacade,
+        MultiCartFacadeInterface $multiCartFacade
     ) {
-        $this->quoteFacade = $quoteFacade;
-        $this->quoteClient = $quoteClient;
-        $this->cartClient = $cartClient;
-    }
-
-    /**
-     * @return \Generated\Shared\Transfer\QuoteTransfer[]
-     */
-    public function getGeneratedQuotes(): array
-    {
-        return $this->generatedQuotes;
+        $this->persistentCartFacade = $persistentCartFacade;
+        $this->multiCartFacade = $multiCartFacade;
+        $this->childQuoteTransfers = new ArrayObject();
     }
 
     /**
      * @return \Generated\Shared\Transfer\QuoteTransfer
      */
-    public function getOriginalQuote(): QuoteTransfer
+    public function getOriginalQuoteTransfer(): QuoteTransfer
     {
-        return $this->originalQuote;
+        return $this->originalQuoteTransfer;
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\QuoteTransfer $originalQuoteTransfer
+     *
+     * @return void
+     */
+    protected function setOriginalQuoteTransfer(QuoteTransfer $originalQuoteTransfer): void
+    {
+        $this->originalQuoteTransfer = $originalQuoteTransfer;
+    }
+
+    /**
+     * @return \Generated\Shared\Transfer\QuoteTransfer[]|\ArrayObject
+     */
+    protected function getChildQuoteTransfers(): ArrayObject
+    {
+        return $this->childQuoteTransfers;
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\QuoteTransfer $quoteTransfer
+     *
+     * @return void
+     */
+    protected function addChildQuoteTransfer(QuoteTransfer $quoteTransfer): void
+    {
+        $this->childQuoteTransfers->append($quoteTransfer);
+    }
+
+    /**
+     * @return \Generated\Shared\Transfer\ItemTransfer[][]
+     */
+    protected function getItemTransfersGroupedByDeliveryDate(): array
+    {
+        return $this->itemTransfersByDeliveryDate;
     }
 
     /**
@@ -80,36 +103,68 @@ class QuoteCreatorByDeliveryDate implements QuoteCreatorByDeliveryDateInterface
      *
      * @return void
      */
-    protected function addItem(ItemTransfer $itemTransfer): void
+    protected function addItemTransferGroupedByDeliveryDate(ItemTransfer $itemTransfer): void
     {
-        $this->itemsByDeliveryDate[$itemTransfer->getDeliveryTime()][] = $itemTransfer;
+        $this->itemTransfersByDeliveryDate[$itemTransfer->getDeliveryTime()][] = $itemTransfer;
+    }
+
+    /**
+     * @return \Generated\Shared\Transfer\QuoteCollectionTransfer
+     */
+    protected function createQuoteCollectionTransferWithChildQuoteTransfers(): QuoteCollectionTransfer
+    {
+        $quoteCollectionTransfer = new QuoteCollectionTransfer();
+        $quoteCollectionTransfer->setQuotes($this->getChildQuoteTransfers());
+
+        return $quoteCollectionTransfer;
     }
 
     /**
      * @param \Generated\Shared\Transfer\QuoteTransfer $originalQuoteTransfer
      *
-     * @throws \Exception
+     * @throws \RuntimeException
      *
-     * @return void
+     * @return \Generated\Shared\Transfer\QuoteCollectionTransfer
      */
-    public function splitAndCreateQuotesByDeliveryDate(QuoteTransfer $originalQuoteTransfer): void
+    public function createAndPersistChildQuotesByDeliveryDate(QuoteTransfer $originalQuoteTransfer): QuoteCollectionTransfer
     {
-        $this->originalQuote = $originalQuoteTransfer;
-
+        $this->setOriginalQuoteTransfer($originalQuoteTransfer);
         foreach ($originalQuoteTransfer->getItems() as $item) {
-            $this->addItem($item);
+            $this->addItemTransferGroupedByDeliveryDate($item);
         }
 
-        foreach ($this->itemsByDeliveryDate as $itemTransfers) {
+        foreach ($this->getItemTransfersGroupedByDeliveryDate() as $itemTransfers) {
             $quoteTransfer = $this->createQuoteTransferFromOriginalQuoteTransfer($originalQuoteTransfer);
             $quoteTransfer = $this->persistQuoteTransfer($quoteTransfer);
+            $quoteTransfer = $this->addItemTransfersToQuote($quoteTransfer, $itemTransfers);
 
-            foreach ($itemTransfers as $itemTransfer) {
-                $quoteTransfer = $this->addItemTransferToQuote($quoteTransfer, $itemTransfer);
-            }
-
-            $this->generatedQuotes[] = $quoteTransfer;
+            $this->addChildQuoteTransfer($quoteTransfer);
         }
+
+        $this->setOriginalQuoteAsDefault($originalQuoteTransfer);
+
+        return $this->createQuoteCollectionTransferWithChildQuoteTransfers();
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\QuoteTransfer $originalQuoteTransfer
+     *
+     * @throws \RuntimeException
+     *
+     * @return \Generated\Shared\Transfer\QuoteTransfer
+     */
+    protected function setOriginalQuoteAsDefault(QuoteTransfer $originalQuoteTransfer): QuoteTransfer
+    {
+        $quoteActivationRequestTransfer = new QuoteActivationRequestTransfer();
+        $quoteActivationRequestTransfer->setCustomer($originalQuoteTransfer->getCustomer());
+        $quoteActivationRequestTransfer->setIdQuote($originalQuoteTransfer->getIdQuote());
+        $quoteResponseTransfer = $this->multiCartFacade->setDefaultQuote($quoteActivationRequestTransfer);
+
+        if ($quoteResponseTransfer->getIsSuccessful()) {
+            return $quoteResponseTransfer->getQuoteTransfer();
+        }
+
+        throw new RuntimeException('Could not reset original quote to default.');
     }
 
     /**
@@ -119,7 +174,6 @@ class QuoteCreatorByDeliveryDate implements QuoteCreatorByDeliveryDateInterface
      */
     protected function createQuoteTransferFromOriginalQuoteTransfer(QuoteTransfer $originalQuoteTransfer): QuoteTransfer
     {
-
         $quote = new QuoteTransfer();
         $quote->fromArray($originalQuoteTransfer->toArray());
         $quote->setIdQuote(null);
@@ -133,30 +187,43 @@ class QuoteCreatorByDeliveryDate implements QuoteCreatorByDeliveryDateInterface
     /**
      * @param \Generated\Shared\Transfer\QuoteTransfer $quoteTransfer
      *
-     * @throws \Exception
+     * @throws \RuntimeException
      *
      * @return \Generated\Shared\Transfer\QuoteTransfer
      */
     protected function persistQuoteTransfer(QuoteTransfer $quoteTransfer): QuoteTransfer
     {
-        $quoteResponse = $this->quoteFacade->createQuote($quoteTransfer);
-        if (! $quoteResponse->getIsSuccessful()) {
-            throw new RuntimeException('Could not create Quote.');
+        $quoteResponseTransfer = $this->persistentCartFacade->createQuote($quoteTransfer);
+        if ($quoteResponseTransfer->getIsSuccessful()) {
+            return $quoteResponseTransfer->getQuoteTransfer();
         }
 
-        return $quoteResponse->getQuoteTransfer();
+        throw new RuntimeException('Could not create Quote.');
     }
 
     /**
      * @param \Generated\Shared\Transfer\QuoteTransfer $quoteTransfer
-     * @param \Generated\Shared\Transfer\ItemTransfer $itemTransfer
+     * @param \Generated\Shared\Transfer\ItemTransfer[] $itemTransfers
+     *
+     * @throws \RuntimeException
      *
      * @return \Generated\Shared\Transfer\QuoteTransfer
      */
-    protected function addItemTransferToQuote(QuoteTransfer $quoteTransfer, ItemTransfer $itemTransfer): QuoteTransfer
+    protected function addItemTransfersToQuote(QuoteTransfer $quoteTransfer, array $itemTransfers): QuoteTransfer
     {
-        $this->quoteClient->setQuote($quoteTransfer);
+        $persistentCartChangeTransfer = new PersistentCartChangeTransfer();
+        $persistentCartChangeTransfer->setIdQuote($quoteTransfer->getIdQuote());
+        $persistentCartChangeTransfer->setCustomer($quoteTransfer->getCustomer());
 
-        return $this->cartClient->addItem($itemTransfer);
+        foreach ($itemTransfers as $itemTransfer) {
+            $persistentCartChangeTransfer->addItem($itemTransfer);
+        }
+
+        $quoteTransferResponse = $this->persistentCartFacade->add($persistentCartChangeTransfer);
+        if ($quoteTransferResponse->getIsSuccessful()) {
+            return $quoteTransferResponse->getQuoteTransfer();
+        }
+
+        throw new RuntimeException('Could not add items');
     }
 }

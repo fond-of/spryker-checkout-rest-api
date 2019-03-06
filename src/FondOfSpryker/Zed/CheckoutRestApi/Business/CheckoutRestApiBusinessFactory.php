@@ -6,11 +6,10 @@ use FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\PlaceOrderProcessor;
 use FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\PlaceOrderProcessorInterface;
 use FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\QuoteCreatorByDeliveryDate;
 use FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\QuoteCreatorByDeliveryDateInterface;
-use Spryker\Client\Cart\CartClientInterface;
-use Spryker\Client\Quote\QuoteClientInterface;
 use Spryker\Zed\CheckoutRestApi\Business\CheckoutRestApiBusinessFactory as SprykerCheckoutRestApiBusinessFactory;
 use FondOfSpryker\Zed\CheckoutRestApi\CheckoutRestApiDependencyProvider;
-use Spryker\Zed\Quote\Business\QuoteFacadeInterface;
+use Spryker\Zed\MultiCart\Business\MultiCartFacadeInterface;
+use Spryker\Zed\PersistentCart\Business\PersistentCartFacadeInterface;
 
 /**
  * @method \FondOfSpryker\Zed\CheckoutRestApi\CheckoutRestApiConfig getConfig()
@@ -34,38 +33,35 @@ class CheckoutRestApiBusinessFactory extends SprykerCheckoutRestApiBusinessFacto
     }
 
     /**
-     * @return \FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\QuoteCreatorByDeliveryDate
+     * @throws \Spryker\Zed\Kernel\Exception\Container\ContainerKeyNotFoundException
+     *
+     * @return \FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\QuoteCreatorByDeliveryDateInterface
      */
     public function createQuoteCreatorByDeliveryDate(): QuoteCreatorByDeliveryDateInterface
     {
         return new QuoteCreatorByDeliveryDate(
-            $this->getQuoteFacadeReal(),
-            $this->getQuoteClient(),
-            $this->getCartClient()
+            $this->getPersistentCartFacade(),
+            $this->getMultiCartFacade()
         );
     }
 
     /**
-     * @return \Spryker\Zed\Quote\Business\QuoteFacadeInterface
+     * @throws \Spryker\Zed\Kernel\Exception\Container\ContainerKeyNotFoundException
+     *
+     * @return \Spryker\Zed\PersistentCart\Business\PersistentCartFacadeInterface
      */
-    public function getQuoteFacadeReal(): QuoteFacadeInterface
+    public function getPersistentCartFacade(): PersistentCartFacadeInterface
     {
-        return $this->getProvidedDependency(CheckoutRestApiDependencyProvider::FACADE_QUOTE_REAL);
+        return $this->getProvidedDependency(CheckoutRestApiDependencyProvider::FACADE_PERSISTENT_CART);
     }
 
     /**
-     * @return \Spryker\Zed\Quote\Business\QuoteFacadeInterface
+     * @throws \Spryker\Zed\Kernel\Exception\Container\ContainerKeyNotFoundException
+     *
+     * @return \Spryker\Zed\MultiCart\Business\MultiCartFacadeInterface
      */
-    public function getQuoteClient(): QuoteClientInterface
+    public function getMultiCartFacade(): MultiCartFacadeInterface
     {
-        return $this->getProvidedDependency(CheckoutRestApiDependencyProvider::CLIENT_QUOTE);
-    }
-
-    /**
-     * @return \Spryker\Client\Cart\CartClientInterface
-     */
-    public function getCartClient(): CartClientInterface
-    {
-        return $this->getProvidedDependency(CheckoutRestApiDependencyProvider::CLIENT_CART);
+        return $this->getProvidedDependency(CheckoutRestApiDependencyProvider::FACADE_MULTI_CART);
     }
 }

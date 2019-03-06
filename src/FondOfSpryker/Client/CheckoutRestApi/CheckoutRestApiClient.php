@@ -1,15 +1,17 @@
 <?php
 
-namespace FondOfSpryker\Zed\CheckoutRestApi\Business;
+declare(strict_types=1);
+
+namespace FondOfspryker\Client\CheckoutRestApi;
 
 use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
 use Generated\Shared\Transfer\RestCheckoutResponseTransfer;
-use Spryker\Zed\CheckoutRestApi\Business\CheckoutRestApiFacade as SprykerCheckoutRestApiFacade;
+use Spryker\Client\CheckoutRestApi\CheckoutRestApiClient as SprykerCheckoutRestApiClient;
 
 /**
- * @method \FondOfSpryker\Zed\CheckoutRestApi\Business\CheckoutRestApiBusinessFactory getFactory()
+ * @method \FondOfspryker\Client\CheckoutRestApi\CheckoutRestApiFactory getFactory()
  */
-class CheckoutRestApiFacade extends SprykerCheckoutRestApiFacade implements CheckoutRestApiFacadeInterface
+class CheckoutRestApiClient extends SprykerCheckoutRestApiClient implements CheckoutRestApiClientInterface
 {
     /**
      * @param \Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer
@@ -18,6 +20,6 @@ class CheckoutRestApiFacade extends SprykerCheckoutRestApiFacade implements Chec
      */
     public function placeOrderSplit(RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestCheckoutResponseTransfer
     {
-        return $this->getFactory()->createFondOfPlaceOrderProcessor()->placeOrderSplit($restCheckoutRequestAttributesTransfer);
+        return $this->getFactory()->createFondOfCheckoutRestApiZedStub()->placeOrderSplit($restCheckoutRequestAttributesTransfer);
     }
 }

@@ -13,5 +13,5 @@ interface CheckoutRestApiFacadeInterface extends SprykerCheckoutRestApiFacadeInt
      *
      * @return \Generated\Shared\Transfer\RestCheckoutResponseTransfer
      */
-    public function placeFondOfOrder(RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestCheckoutResponseTransfer;
+    public function placeOrderSplit(RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestCheckoutResponseTransfer;
 }

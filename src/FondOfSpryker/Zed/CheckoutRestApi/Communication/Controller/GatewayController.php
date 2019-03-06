@@ -17,8 +17,8 @@ class GatewayController extends SprykerGatewayController
      *
      * @return \Generated\Shared\Transfer\RestCheckoutResponseTransfer
      */
-    public function placeOrderAction(RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestCheckoutResponseTransfer
+    public function placeOrderSplitAction(RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestCheckoutResponseTransfer
     {
-        return $this->getFacade()->placeFondOfOrder($restCheckoutRequestAttributesTransfer);
+        return $this->getFacade()->placeFondOfOrderSplit($restCheckoutRequestAttributesTransfer);
     }
 }
