@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace FondOfSpryker\Glue\CheckoutRestApi\Processor\Checkout;
 
-use FondOfspryker\Client\CheckoutRestApi\CheckoutRestApiClientInterface;
+use FondOfSpryker\Client\CheckoutRestApi\CheckoutRestApiClientInterface;
 use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
 use Spryker\Glue\CheckoutRestApi\Dependency\Client\CheckoutRestApiToGlossaryStorageClientInterface;
 use Spryker\Glue\CheckoutRestApi\Processor\RequestAttributesExpander\CheckoutRequestAttributesExpanderInterface;

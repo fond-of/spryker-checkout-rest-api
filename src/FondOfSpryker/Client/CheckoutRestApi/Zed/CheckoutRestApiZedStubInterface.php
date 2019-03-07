@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FondOfspryker\Client\CheckoutRestApi\Zed;
+namespace FondOfSpryker\Client\CheckoutRestApi\Zed;
 
 use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
 use Generated\Shared\Transfer\RestCheckoutResponseTransfer;

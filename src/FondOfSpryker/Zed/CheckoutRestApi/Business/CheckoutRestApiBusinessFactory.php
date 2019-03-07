@@ -10,6 +10,7 @@ use Spryker\Zed\CheckoutRestApi\Business\CheckoutRestApiBusinessFactory as Spryk
 use FondOfSpryker\Zed\CheckoutRestApi\CheckoutRestApiDependencyProvider;
 use Spryker\Zed\MultiCart\Business\MultiCartFacadeInterface;
 use Spryker\Zed\PersistentCart\Business\PersistentCartFacadeInterface;
+use Spryker\Zed\Quote\Business\QuoteFacadeInterface;
 
 /**
  * @method \FondOfSpryker\Zed\CheckoutRestApi\CheckoutRestApiConfig getConfig()
@@ -28,7 +29,8 @@ class CheckoutRestApiBusinessFactory extends SprykerCheckoutRestApiBusinessFacto
             $this->getQuoteFacade(),
             $this->getCalculationFacade(),
             $this->getQuoteMapperPlugins(),
-            $this->createQuoteCreatorByDeliveryDate()
+            $this->createQuoteCreatorByDeliveryDate(),
+            $this->getQuoteFacadeReal()
         );
     }
 
@@ -63,5 +65,15 @@ class CheckoutRestApiBusinessFactory extends SprykerCheckoutRestApiBusinessFacto
     public function getMultiCartFacade(): MultiCartFacadeInterface
     {
         return $this->getProvidedDependency(CheckoutRestApiDependencyProvider::FACADE_MULTI_CART);
+    }
+
+    /**
+     * @throws \Spryker\Zed\Kernel\Exception\Container\ContainerKeyNotFoundException
+     *
+     * @return \Spryker\Zed\Quote\Business\QuoteFacadeInterface
+     */
+    public function getQuoteFacadeReal(): QuoteFacadeInterface
+    {
+        return $this->getProvidedDependency(CheckoutRestApiDependencyProvider::FACADE_QUOTE_REAL);
     }
 }

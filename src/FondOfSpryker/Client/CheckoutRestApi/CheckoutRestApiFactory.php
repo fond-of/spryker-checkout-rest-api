@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FondOfspryker\Client\CheckoutRestApi;
+namespace FondOfSpryker\Client\CheckoutRestApi;
 
-use FondOfspryker\Client\CheckoutRestApi\Zed\CheckoutRestApiZedStub;
+use FondOfSpryker\Client\CheckoutRestApi\Zed\CheckoutRestApiZedStub;
 use Spryker\Client\CheckoutRestApi\Zed\CheckoutRestApiZedStubInterface;
 use Spryker\Client\CheckoutRestApi\CheckoutRestApiFactory as SprykerCheckoutRestApiFactory;
 

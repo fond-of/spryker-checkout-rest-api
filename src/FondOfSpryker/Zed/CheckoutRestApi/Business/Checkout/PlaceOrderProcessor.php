@@ -3,6 +3,9 @@
 namespace FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout;
 
 use ArrayObject;
+use Generated\Shared\Transfer\CheckoutResponseQuoteCollectionTransfer;
+use Generated\Shared\Transfer\CheckoutResponseQuoteTransfer;
+use Generated\Shared\Transfer\ItemTransfer;
 use Generated\Shared\Transfer\QuoteCollectionTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Spryker\Glue\CheckoutRestApi\CheckoutRestApiConfig;
@@ -14,39 +17,24 @@ use Spryker\Zed\CheckoutRestApi\Dependency\Facade\CheckoutRestApiToCartFacadeInt
 use Spryker\Zed\CheckoutRestApi\Dependency\Facade\CheckoutRestApiToCheckoutFacadeInterface;
 use Spryker\Zed\CheckoutRestApi\Dependency\Facade\CheckoutRestApiToQuoteFacadeInterface;
 use Spryker\Zed\CheckoutRestApi\Business\Checkout\Quote\QuoteReaderInterface;
+use Spryker\Zed\Quote\Business\QuoteFacadeInterface;
 
 class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrderProcessorInterface
 {
+    /**
+     * @var \Spryker\Zed\Quote\Business\QuoteFacadeInterface
+     */
+    protected $quoteFacadeReal;
+
     /**
      * @var \FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\QuoteCreatorByDeliveryDateInterface
      */
     protected $quoteCreatorByDeliveryDate;
 
     /**
-     * @var \Generated\Shared\Transfer\RestCheckoutResponseTransfer[]
-     */
-    protected $validationErrorResponses = [];
-
-    /**
-     * @var \Generated\Shared\Transfer\QuoteTransfer[]
-     */
-    protected $readyToPlaceOrder = [];
-
-    /**
-     * @var \Generated\Shared\Transfer\CheckoutResponseTransfer[]
-     */
-    protected $checkoutResponseTransfers = [];
-
-    /**
-     * @var \Generated\Shared\Transfer\RestCheckoutResponseTransfer[]
-     */
-    protected $restErrorCheckoutResponseTransfers = [];
-
-
-    /**
      * @var \Generated\Shared\Transfer\RestCheckoutResponseTransfer[]|ArrayObject
      */
-    protected $invalidChildQuoteRestCheckoutResponseTransfers;
+    protected $invalidRestCheckoutResponseTransfers;
 
     /**
      * @param \Spryker\Zed\CheckoutRestApi\Business\Checkout\Quote\QuoteReaderInterface $quoteReader
@@ -56,6 +44,7 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
      * @param \Spryker\Zed\CheckoutRestApi\Dependency\Facade\CheckoutRestApiToCalculationFacadeInterface $calculationFacade
      * @param \Spryker\Zed\CheckoutRestApiExtension\Dependency\Plugin\QuoteMapperPluginInterface[] $quoteMapperPlugins
      * @param \FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\QuoteCreatorByDeliveryDateInterface $quoteCreatorByDeliveryDate
+     * @param \Spryker\Zed\Quote\Business\QuoteFacadeInterface $quoteFacadeReal
      */
     public function __construct(
         QuoteReaderInterface $quoteReader,
@@ -64,19 +53,13 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
         CheckoutRestApiToQuoteFacadeInterface $quoteFacade,
         CheckoutRestApiToCalculationFacadeInterface $calculationFacade,
         array $quoteMapperPlugins,
-        QuoteCreatorByDeliveryDateInterface $quoteCreatorByDeliveryDate
-
+        QuoteCreatorByDeliveryDateInterface $quoteCreatorByDeliveryDate,
+        QuoteFacadeInterface $quoteFacadeReal
     ) {
         parent::__construct($quoteReader, $cartFacade, $checkoutFacade, $quoteFacade, $calculationFacade, $quoteMapperPlugins);
-        $this->quoteReader = $quoteReader;
-        $this->cartFacade = $cartFacade;
-        $this->checkoutFacade = $checkoutFacade;
-        $this->quoteFacade = $quoteFacade;
-        $this->calculationFacade = $calculationFacade;
-        $this->quoteMapperPlugins = $quoteMapperPlugins;
         $this->quoteCreatorByDeliveryDate = $quoteCreatorByDeliveryDate;
-
-        $this->invalidChildQuoteRestCheckoutResponseTransfers = new ArrayObject();
+        $this->invalidRestCheckoutResponseTransfers = new ArrayObject();
+        $this->quoteFacadeReal = $quoteFacadeReal;
     }
 
     /**
@@ -87,22 +70,18 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
     public function placeOrderSplit(RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestCheckoutResponseTransfer
     {
         $originalQuoteTransfer = $this->quoteReader->findCustomerQuoteByUuid($restCheckoutRequestAttributesTransfer);
-
-        $originalRestCheckoutResponseTransfer = $this->validateQuoteTransfer($originalQuoteTransfer);
-        if ($originalRestCheckoutResponseTransfer !== null || $originalQuoteTransfer === null) {
-            return $originalRestCheckoutResponseTransfer;
+        if ($originalQuoteTransfer === null || $this->isQuoteTransferValid($originalQuoteTransfer) === false) {
+            return $this->createMultipleRestCheckoutResponseTransfer();
         }
-
-        $originalQuoteTransfer = $this->prepareQuoteTransfer($restCheckoutRequestAttributesTransfer, $originalQuoteTransfer);
 
         // split original, create and persist child quotes.
         $invalidatedQuoteCollectionTransfer = $this->quoteCreatorByDeliveryDate->createAndPersistChildQuotesByDeliveryDate(
-            $originalQuoteTransfer
+            $originalQuoteTransfer = $this->prepareQuoteTransfer($restCheckoutRequestAttributesTransfer, $originalQuoteTransfer)
         );
 
         // validate child quotes and return error collection in that case.
         $validatedQuoteTransferCollection = $this->filterInvalidQuoteTransfers($invalidatedQuoteCollectionTransfer);
-        if ($this->hasInvalidChildQuoteCheckoutResponseTransfer()) {
+        if ($this->hasInvalidRestCheckoutResponseTransfer()) {
             return $this->createMultipleRestCheckoutResponseTransfer();
         }
 
@@ -111,45 +90,169 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
             $restCheckoutRequestAttributesTransfer, $validatedQuoteTransferCollection
         );
 
-        // place order
-        $this->placeOrderForChildQuoteCollectionTransfer($validatedQuoteTransferCollection);
+        // place orders
+        $checkoutResponseQuoteCollectionTransfer = $this->placeOrderForQuoteCollectionTransfer($validatedQuoteTransferCollection);
 
+        // remove items from original if some place orders failed.
+        if ($this->hasInvalidCheckoutResponseTransfers($checkoutResponseQuoteCollectionTransfer)) {
+            $originalQuoteTransfer = $this->removeSuccessfullyPlacedOrderItemsFromOriginalQuoteTransfer(
+                $checkoutResponseQuoteCollectionTransfer,
+                $originalQuoteTransfer
+            );
 
-        foreach ($this->readyToPlaceOrder as $placeOrderReadyQuote) {
-            $this->checkoutResponseTransfers[] = $this->executePlaceOrder($placeOrderReadyQuote);
-        }
-
-        foreach ($this->checkoutResponseTransfers as $checkoutResponseTransfer) {
-            if (!$checkoutResponseTransfer->getIsSuccess()) {
-                $this->restErrorCheckoutResponseTransfers[] = $this->createPlaceOrderErrorResponse($checkoutResponseTransfer);
+            $originalQuoteTransfer = $this->recalculateQuote($originalQuoteTransfer);
+            $originalQuoteResponseTransfer = $this->quoteFacadeReal->updateQuote($originalQuoteTransfer);
+            if (! $originalQuoteResponseTransfer->getIsSuccessful()) {
+                throw new \RuntimeException('Could not update original quote facade');
             }
         }
 
-        if (\count($this->restErrorCheckoutResponseTransfers) === 0) {
-            $originalQuoteResponseTransfer = $this->deleteQuote($originalQuoteTransfer);
-            if (!$originalQuoteResponseTransfer->getIsSuccessful()) {
-                return $this->createQuoteResponseError(
-                    $originalQuoteResponseTransfer,
-                    CheckoutRestApiConfig::RESPONSE_CODE_UNABLE_TO_DELETE_CART,
-                    CheckoutRestApiConfig::RESPONSE_DETAILS_UNABLE_TO_DELETE_CART
+        // remove all child quotes, remove original quote if all place orders were successful.
+        $this->deleteQuoteCollectionTransfer($validatedQuoteTransferCollection);
+        if (! $this->hasInvalidCheckoutResponseTransfers($checkoutResponseQuoteCollectionTransfer)) {
+            $this->deleteQuoteTransfer($originalQuoteTransfer);
+        }
+
+        return $this->createMultipleRestCheckoutResponseTransfer();
+    }
+
+    /**
+     * TODO
+     *
+     * @return \Generated\Shared\Transfer\RestCheckoutResponseTransfer
+     */
+    protected function createMultipleRestCheckoutResponseTransfer(): RestCheckoutResponseTransfer
+    {
+        return new RestCheckoutResponseTransfer();
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\CheckoutResponseQuoteCollectionTransfer $checkoutResponseQuoteCollectionTransfer
+     * @param \Generated\Shared\Transfer\QuoteTransfer $originalQuoteTransfer
+     *
+     * @return \Generated\Shared\Transfer\QuoteTransfer
+     */
+    protected function removeSuccessfullyPlacedOrderItemsFromOriginalQuoteTransfer(
+        CheckoutResponseQuoteCollectionTransfer $checkoutResponseQuoteCollectionTransfer,
+        QuoteTransfer $originalQuoteTransfer
+    ): QuoteTransfer {
+        foreach ($checkoutResponseQuoteCollectionTransfer->getCheckoutResponseQuotes() as $checkoutResponseQuote) {
+            if ($checkoutResponseQuote->getQuoteTransfer() === null || ! $checkoutResponseQuote->getIsSuccess()) {
+                continue;
+            }
+
+            $itemTransfersToRemove = $checkoutResponseQuote->getQuoteTransfer()->getItems();
+            foreach ($itemTransfersToRemove as $itemTransferToRemove) {
+                $originalQuoteTransfer = $this->removeItemTransferFromQuoteTransfer($originalQuoteTransfer, $itemTransferToRemove);
+            }
+        }
+
+        return $originalQuoteTransfer;
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\QuoteTransfer $originalQuoteTransfer
+     * @param \Generated\Shared\Transfer\ItemTransfer $itemTransferToRemove
+     *
+     * @return \Generated\Shared\Transfer\QuoteTransfer
+     */
+    protected function removeItemTransferFromQuoteTransfer(QuoteTransfer $originalQuoteTransfer, ItemTransfer $itemTransferToRemove): QuoteTransfer
+    {
+        $newItemTransfers = new ArrayObject();
+        foreach ($originalQuoteTransfer->getItems() as $itemTransfer) {
+            if ($itemTransfer->getDeliveryTime() === $itemTransferToRemove->getDeliveryTime()
+                && $itemTransfer->getSku() === $itemTransferToRemove->getSku()
+                && $itemTransfer->getQuantity() === $itemTransferToRemove->getQuantity()) {
+
+                continue;
+            }
+
+            $newItemTransfers->append($itemTransfer);
+        }
+
+        $originalQuoteTransfer->setItems($newItemTransfers);
+
+        return $originalQuoteTransfer;
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\CheckoutResponseQuoteCollectionTransfer $checkoutResponseQuoteCollectionTransfer
+     *
+     * @return bool
+     */
+    protected function hasInvalidCheckoutResponseTransfers(CheckoutResponseQuoteCollectionTransfer $checkoutResponseQuoteCollectionTransfer): bool
+    {
+        foreach ($checkoutResponseQuoteCollectionTransfer->getCheckoutResponseQuotes() as $checkoutResponseQuote) {
+            if (!$checkoutResponseQuote->getIsSuccess()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\QuoteCollectionTransfer $quoteCollectionTransfer
+     *
+     * @return void
+     */
+    protected function deleteQuoteCollectionTransfer(QuoteCollectionTransfer $quoteCollectionTransfer): void
+    {
+        foreach ($quoteCollectionTransfer->getQuotes() as $quoteTransfer) {
+            $this->deleteQuoteTransfer($quoteTransfer);
+        }
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\QuoteTransfer $quoteTransfer
+     *
+     * @return void
+     */
+    protected function deleteQuoteTransfer(QuoteTransfer $quoteTransfer): void
+    {
+        $quoteResponseTransfer = $this->deleteQuote($quoteTransfer);
+
+        if (!$quoteResponseTransfer->getIsSuccessful()) {
+            $invalidRestCheckoutResponseTransfer = $this->createQuoteResponseError(
+                $quoteResponseTransfer,
+                CheckoutRestApiConfig::RESPONSE_CODE_UNABLE_TO_DELETE_CART,
+                CheckoutRestApiConfig::RESPONSE_DETAILS_UNABLE_TO_DELETE_CART
+            );
+
+            $this->addInvalidRestCheckoutResponseTransfer($invalidRestCheckoutResponseTransfer);
+        }
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\QuoteCollectionTransfer $validatedQuoteCollectionTransfer
+     *
+     * @return \Generated\Shared\Transfer\CheckoutResponseQuoteCollectionTransfer
+     */
+    protected function placeOrderForQuoteCollectionTransfer(QuoteCollectionTransfer $validatedQuoteCollectionTransfer): CheckoutResponseQuoteCollectionTransfer
+    {
+        $checkoutResponseQuoteCollectionTransfer = new CheckoutResponseQuoteCollectionTransfer();
+
+        foreach ($validatedQuoteCollectionTransfer->getQuotes() as $quoteTransfer) {
+            $checkoutResponseTransfer = $this->executePlaceOrder($quoteTransfer);
+
+            // create invalid rest checkout response transfers and append them to the list.
+            if (!$checkoutResponseTransfer->getIsSuccess()) {
+                $this->addInvalidRestCheckoutResponseTransfer(
+                    $this->createPlaceOrderErrorResponse($checkoutResponseTransfer)
                 );
             }
+
+            $checkoutResponseQuoteTransfer = new CheckoutResponseQuoteTransfer();
+            $checkoutResponseQuoteTransfer->setQuoteTransfer($quoteTransfer);
+            $checkoutResponseQuoteTransfer->setCheckoutResponse($checkoutResponseTransfer);
+            $checkoutResponseQuoteTransfer->setIsSuccess($checkoutResponseTransfer->getIsSuccess());
+
+            $checkoutResponseQuoteCollectionTransfer->addCheckoutResponseQuote(
+                $checkoutResponseQuoteTransfer
+            );
         }
 
-        return (new RestCheckoutResponseTransfer());
-    }
-
-
-    protected function addSuccessfulPlaceOrderChildQuoteCheckoutResponseTransfer(): void
-    {
-
-    }
-
-    protected function placeOrderForChildQuoteCollectionTransfer(QuoteCollectionTransfer $quoteCollectionTransfer)
-    {
-        foreach ($this->readyToPlaceOrder as $placeOrderReadyQuote) {
-            $this->checkoutResponseTransfers[] = $this->executePlaceOrder($placeOrderReadyQuote);
-        }
+        return $checkoutResponseQuoteCollectionTransfer;
     }
 
     /**
@@ -162,10 +265,12 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
         RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer,
         QuoteCollectionTransfer $quoteCollectionTransfer
     ): QuoteCollectionTransfer {
+
         $quoteTransfers = new ArrayObject();
         foreach ($quoteCollectionTransfer->getQuotes() as $quoteTransfer) {
-            $quoteTransfer =  $this->prepareQuoteTransfer($restCheckoutRequestAttributesTransfer, $quoteTransfer);
-            $quoteTransfers->append($quoteTransfer);
+            $quoteTransfers->append(
+                $this->prepareQuoteTransfer($restCheckoutRequestAttributesTransfer, $quoteTransfer)
+            );
         }
 
         $quoteCollectionTransfer->setQuotes($quoteTransfers);
@@ -198,7 +303,7 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
     {
         $validQuoteCollectionTransfer = new QuoteCollectionTransfer();
         foreach ($collectionTransfer->getQuotes() as $quoteTransfer) {
-            if ($this->isChildQuoteTransferValid($quoteTransfer)) {
+            if ($this->isQuoteTransferValid($quoteTransfer)) {
                 $validQuoteCollectionTransfer->addQuote($quoteTransfer);
             }
         }
@@ -211,12 +316,12 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
      *
      * @return bool
      */
-    protected function isChildQuoteTransferValid(QuoteTransfer $quoteTransfer): bool
+    protected function isQuoteTransferValid(QuoteTransfer $quoteTransfer): bool
     {
         $restCheckoutResponseTransfer = $this->validateQuoteTransfer($quoteTransfer);
 
         if ($restCheckoutResponseTransfer !== null) {
-            $this->addInvalidChildQuoteCheckoutResponseTransfer($restCheckoutResponseTransfer);
+            $this->addInvalidRestCheckoutResponseTransfer($restCheckoutResponseTransfer);
             return false;
         }
 
@@ -228,17 +333,16 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
      *
      * @return void
      */
-    protected function addInvalidChildQuoteCheckoutResponseTransfer(
-        RestCheckoutResponseTransfer $restCheckoutResponseTransfer
-    ): void {
-        $this->invalidChildQuoteRestCheckoutResponseTransfers->append($restCheckoutResponseTransfer);
+    protected function addInvalidRestCheckoutResponseTransfer(RestCheckoutResponseTransfer $restCheckoutResponseTransfer): void
+    {
+        $this->invalidRestCheckoutResponseTransfers->append($restCheckoutResponseTransfer);
     }
 
     /**
      * @return bool
      */
-    protected function hasInvalidChildQuoteCheckoutResponseTransfer(): bool
+    protected function hasInvalidRestCheckoutResponseTransfer(): bool
     {
-        return $this->invalidChildQuoteRestCheckoutResponseTransfers->count() > 0;
+        return $this->invalidRestCheckoutResponseTransfers->count() > 0;
     }
 }

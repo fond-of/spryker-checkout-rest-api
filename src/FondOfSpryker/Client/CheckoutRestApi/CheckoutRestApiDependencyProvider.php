@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FondOfspryker\Client\CheckoutRestApi;
+namespace FondOfSpryker\Client\CheckoutRestApi;
 
 use Spryker\Client\Kernel\Container;
 use Spryker\Client\CheckoutRestApi\CheckoutRestApiDependencyProvider as SprykerCheckoutRestApiDependencyProvider;
