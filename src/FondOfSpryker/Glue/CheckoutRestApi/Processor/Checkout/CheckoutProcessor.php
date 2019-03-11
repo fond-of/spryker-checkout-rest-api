@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace FondOfSpryker\Glue\CheckoutRestApi\Processor\Checkout;
 
 use FondOfSpryker\Client\CheckoutRestApi\CheckoutRestApiClientInterface;
+use Generated\Shared\Transfer\RestCheckoutMultipleResponseAttributesTransfer;
 use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
+use Spryker\Glue\CheckoutRestApi\CheckoutRestApiConfig;
 use Spryker\Glue\CheckoutRestApi\Dependency\Client\CheckoutRestApiToGlossaryStorageClientInterface;
 use Spryker\Glue\CheckoutRestApi\Processor\RequestAttributesExpander\CheckoutRequestAttributesExpanderInterface;
 use Spryker\Glue\CheckoutRestApi\Processor\Validator\CheckoutRequestValidatorInterface;
@@ -62,11 +64,32 @@ class CheckoutProcessor extends SprykerCheckoutProcessor implements CheckoutProc
         $restCheckoutRequestAttributesTransfer = $this->checkoutRequestAttributesExpander
             ->expandCheckoutRequestAttributes($restRequest, $restCheckoutRequestAttributesTransfer);
 
-        $restCheckoutResponseTransfer = $this->fondOfCheckoutRestApiClient->placeOrderSplit($restCheckoutRequestAttributesTransfer);
-        if (!$restCheckoutResponseTransfer->getIsSuccess()) {
-            return $this->createPlaceOrderFailedErrorResponse($restCheckoutResponseTransfer->getErrors(), $restRequest->getMetadata()->getLocale());
+        $restCheckoutMultipleResponseTransfer = $this->fondOfCheckoutRestApiClient->placeOrderSplit($restCheckoutRequestAttributesTransfer);
+        if (!$restCheckoutMultipleResponseTransfer->getIsSuccess()) {
+            return $this->createPlaceOrderFailedErrorResponse($restCheckoutMultipleResponseTransfer->getErrors(), $restRequest->getMetadata()->getLocale());
         }
 
-        return $this->createOrderPlacedResponse($restCheckoutResponseTransfer->getOrderReference());
+        return $this->createOrderPlacedMultipleResponse($restCheckoutMultipleResponseTransfer->getOrderReferences());
+    }
+
+    /**
+     * @param string[] $orderReferences
+     *
+     * @return \Spryker\Glue\GlueApplication\Rest\JsonApi\RestResponseInterface
+     */
+    protected function createOrderPlacedMultipleResponse(array $orderReferences): RestResponseInterface
+    {
+        $restCheckoutMultipleResponseAttributesTransfer = new RestCheckoutMultipleResponseAttributesTransfer();
+        $restCheckoutMultipleResponseAttributesTransfer->setOrderReferences($orderReferences);
+
+        $restResource = $this->restResourceBuilder->createRestResource(
+            CheckoutRestApiConfig::RESOURCE_CHECKOUT,
+            null,
+            $restCheckoutMultipleResponseAttributesTransfer
+        );
+
+        return $this->restResourceBuilder
+            ->createRestResponse()
+            ->addResource($restResource);
     }
 }

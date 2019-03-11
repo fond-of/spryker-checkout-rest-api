@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace FondOfSpryker\Client\CheckoutRestApi;
 
+use Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer;
 use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
-use Generated\Shared\Transfer\RestCheckoutResponseTransfer;
 use Spryker\Client\CheckoutRestApi\CheckoutRestApiClientInterface as SprykerCheckoutRestApiClientInterface;
 
 interface CheckoutRestApiClientInterface extends SprykerCheckoutRestApiClientInterface
@@ -13,7 +13,7 @@ interface CheckoutRestApiClientInterface extends SprykerCheckoutRestApiClientInt
     /**
      * @param \Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer
      *
-     * @return \Generated\Shared\Transfer\RestCheckoutResponseTransfer
+     * @return \Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer
      */
-    public function placeOrderSplit(RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestCheckoutResponseTransfer;
+    public function placeOrderSplit(RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestCheckoutMultipleResponseTransfer;
 }

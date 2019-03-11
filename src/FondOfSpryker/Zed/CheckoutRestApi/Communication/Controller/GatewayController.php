@@ -2,8 +2,8 @@
 
 namespace FondOfSpryker\Zed\CheckoutRestApi\Communication\Controller;
 
+use Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer;
 use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
-use Generated\Shared\Transfer\RestCheckoutResponseTransfer;
 
 use Spryker\Zed\CheckoutRestApi\Communication\Controller\GatewayController as SprykerGatewayController;
 
@@ -15,9 +15,9 @@ class GatewayController extends SprykerGatewayController
     /**
      * @param \Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer
      *
-     * @return \Generated\Shared\Transfer\RestCheckoutResponseTransfer
+     * @return \Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer
      */
-    public function placeOrderSplitAction(RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestCheckoutResponseTransfer
+    public function placeOrderSplitAction(RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestCheckoutMultipleResponseTransfer
     {
         return $this->getFacade()->placeOrderSplit($restCheckoutRequestAttributesTransfer);
     }

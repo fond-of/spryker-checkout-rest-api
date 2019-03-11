@@ -12,4 +12,14 @@
     <transfer name="CheckoutResponseQuoteCollectionTransfer">
         <property name="checkoutResponseQuotes" type="CheckoutResponseQuote[]" singular="checkoutResponseQuote" />
     </transfer>
+
+    <transfer name="RestCheckoutMultipleResponse">
+        <property name="isSuccess" type="bool" />
+        <property name="errors" type="RestCheckoutError[]" singular="error" />
+        <property name="orderReferences" type="array" singular="orderReference" />
+    </transfer>
+
+    <transfer name="RestCheckoutMultipleResponseAttributes">
+        <property name="orderReferences" type="array" singular="orderReference" />
+    </transfer>
 </transfers>

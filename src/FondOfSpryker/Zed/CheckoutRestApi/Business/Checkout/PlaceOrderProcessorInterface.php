@@ -2,8 +2,8 @@
 
 namespace FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout;
 
+use Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer;
 use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
-use Generated\Shared\Transfer\RestCheckoutResponseTransfer;
 use Spryker\Zed\CheckoutRestApi\Business\Checkout\PlaceOrderProcessorInterface as sprykerPlaceOrderProcessorInterface;
 
 interface PlaceOrderProcessorInterface extends SprykerPlaceOrderProcessorInterface
@@ -11,7 +11,7 @@ interface PlaceOrderProcessorInterface extends SprykerPlaceOrderProcessorInterfa
     /**
      * @param \Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer
      *
-     * @return \Generated\Shared\Transfer\RestCheckoutResponseTransfer
+     * @return \Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer
      */
-    public function placeOrderSplit(RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestCheckoutResponseTransfer;
+    public function placeOrderSplit(RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestCheckoutMultipleResponseTransfer;
 }
