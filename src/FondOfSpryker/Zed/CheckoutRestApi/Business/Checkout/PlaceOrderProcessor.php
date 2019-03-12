@@ -22,6 +22,8 @@ use Spryker\Zed\CheckoutRestApi\Dependency\Facade\CheckoutRestApiToQuoteFacadeIn
 use Spryker\Zed\CheckoutRestApi\Business\Checkout\Quote\QuoteReaderInterface;
 use Spryker\Zed\Quote\Business\QuoteFacadeInterface;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
+use RuntimeException;
 
 class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrderProcessorInterface
 {
@@ -83,11 +85,10 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
             $originalQuoteTransfer = $this->prepareQuoteTransfer($restCheckoutRequestAttributesTransfer, $originalQuoteTransfer)
         );
 
-        $con = Propel::getConnection();
-        $con->beginTransaction();
+        $connection = Propel::getConnection();
+        $connection->beginTransaction();
 
         try {
-
             // validate child quotes and return error collection in that case.
             $validatedQuoteTransferCollection = $this->filterInvalidQuoteTransfers($invalidatedQuoteCollectionTransfer);
             if ($this->hasInvalidRestCheckoutResponseTransfer()) {
@@ -109,11 +110,7 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
                     $originalQuoteTransfer
                 );
 
-                $originalQuoteTransfer = $this->recalculateQuote($originalQuoteTransfer);
-                $originalQuoteResponseTransfer = $this->quoteFacadeReal->updateQuote($originalQuoteTransfer);
-                if (! $originalQuoteResponseTransfer->getIsSuccessful()) {
-                    throw new \RuntimeException('Could not update original quote facade');
-                }
+                $originalQuoteTransfer = $this->updateOriginalQuote($originalQuoteTransfer);
             }
 
             // remove all child quotes, remove original quote if all place orders were successful.
@@ -122,13 +119,31 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
                 $this->deleteQuoteTransfer($originalQuoteTransfer);
             }
 
-            $con->commit();
+            $connection->commit();
 
-        } catch (\Throwable $throwable) {
-            $con->rollBack();
+        } catch (Throwable $throwable) {
+            $connection->rollBack();
         }
 
         return $this->createMultipleRestCheckoutResponseTransfer($checkoutResponseQuoteCollectionTransfer);
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\QuoteTransfer $originalQuoteTransfer
+     *
+     * @throws RuntimeException
+     *
+     * @return QuoteTransfer
+     */
+    public function updateOriginalQuote(QuoteTransfer $originalQuoteTransfer): QuoteTransfer
+    {
+        $originalQuoteTransfer = $this->recalculateQuote($originalQuoteTransfer);
+        $originalQuoteResponseTransfer = $this->quoteFacadeReal->updateQuote($originalQuoteTransfer);
+        if (! $originalQuoteResponseTransfer->getIsSuccessful()) {
+            throw new RuntimeException('Could not update original quote facade');
+        }
+
+        return $originalQuoteTransfer;
     }
 
     /**
@@ -143,6 +158,42 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
         $restCheckoutResponseTransfer = new RestCheckoutMultipleResponseTransfer();
         $restCheckoutResponseTransfer->setIsSuccess(true);
 
+        $restCheckoutResponseTransfer = $this->addErrorResponses($restCheckoutResponseTransfer);
+        if ($checkoutResponseQuoteCollectionTransfer !== null) {
+            $restCheckoutResponseTransfer = $this->addSuccessResponse($restCheckoutResponseTransfer, $checkoutResponseQuoteCollectionTransfer);
+        }
+
+        return $restCheckoutResponseTransfer;
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer $restCheckoutResponseTransfer
+     * @param \Generated\Shared\Transfer\CheckoutResponseQuoteCollectionTransfer $checkoutResponseQuoteCollectionTransfer
+     *
+     * @return \Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer
+     */
+    protected function addSuccessResponse(
+        RestCheckoutMultipleResponseTransfer $restCheckoutResponseTransfer,
+        CheckoutResponseQuoteCollectionTransfer $checkoutResponseQuoteCollectionTransfer
+    ): RestCheckoutMultipleResponseTransfer {
+        foreach ($checkoutResponseQuoteCollectionTransfer->getCheckoutResponseQuotes() as $checkoutResponseQuote) {
+            if ($checkoutResponseQuote->getIsSuccess()) {
+                $restCheckoutResponseTransfer->addOrderReference(
+                    $checkoutResponseQuote->getCheckoutResponse()->getSaveOrder()->getOrderReference()
+                );
+            }
+        }
+
+        return $restCheckoutResponseTransfer;
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer $restCheckoutResponseTransfer
+     *
+     * @return \Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer
+     */
+    protected function addErrorResponses(RestCheckoutMultipleResponseTransfer $restCheckoutResponseTransfer): RestCheckoutMultipleResponseTransfer
+    {
         foreach ($this->invalidRestCheckoutResponseTransfers as $invalidRestCheckoutResponseTransfers) {
             foreach ($invalidRestCheckoutResponseTransfers->getErrors() as $errorTransfer) {
                 $restCheckoutResponseTransfer->addError(
@@ -157,25 +208,15 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
 
         if ($this->hasInvalidRestCheckoutResponseTransfer() && $restCheckoutResponseTransfer->getErrors()->count() === 0) {
             $restCheckoutResponseTransfer->addError(
-                    (new RestCheckoutErrorTransfer())
-                        ->setStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
-                        ->setCode(CheckoutRestApiConfig::RESPONSE_CODE_ORDER_NOT_PLACED)
-                        ->setDetail(CheckoutRestApiConfig::RESPONSE_DETAILS_ORDER_NOT_PLACED)
-                );
+                (new RestCheckoutErrorTransfer())
+                    ->setStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+                    ->setCode(CheckoutRestApiConfig::RESPONSE_CODE_ORDER_NOT_PLACED)
+                    ->setDetail(CheckoutRestApiConfig::RESPONSE_DETAILS_ORDER_NOT_PLACED)
+            );
         }
 
         if ($restCheckoutResponseTransfer->getErrors()->count() !== 0) {
             $restCheckoutResponseTransfer->setIsSuccess(false);
-        }
-
-        if ($checkoutResponseQuoteCollectionTransfer !== null) {
-            foreach ($checkoutResponseQuoteCollectionTransfer->getCheckoutResponseQuotes() as $checkoutResponseQuote) {
-                if ($checkoutResponseQuote->getIsSuccess()) {
-                    $restCheckoutResponseTransfer->addOrderReference(
-                        $checkoutResponseQuote->getCheckoutResponse()->getSaveOrder()->getOrderReference()
-                    );
-                }
-            }
         }
 
         return $restCheckoutResponseTransfer;
