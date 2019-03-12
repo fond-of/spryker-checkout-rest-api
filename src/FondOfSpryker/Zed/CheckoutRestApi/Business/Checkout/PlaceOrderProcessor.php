@@ -80,14 +80,15 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
             return $this->createMultipleRestCheckoutResponseTransfer();
         }
 
+        $connection = Propel::getConnection();
+        $connection->beginTransaction();
+
         // split original, create and persist child quotes.
         $invalidatedQuoteCollectionTransfer = $this->quoteCreatorByDeliveryDate->createAndPersistChildQuotesByDeliveryDate(
             $originalQuoteTransfer = $this->prepareQuoteTransfer($restCheckoutRequestAttributesTransfer, $originalQuoteTransfer)
         );
 
-        $connection = Propel::getConnection();
-        $connection->beginTransaction();
-
+        $checkoutResponseQuoteCollectionTransfer = null;
         try {
             // validate child quotes and return error collection in that case.
             $validatedQuoteTransferCollection = $this->filterInvalidQuoteTransfers($invalidatedQuoteCollectionTransfer);
