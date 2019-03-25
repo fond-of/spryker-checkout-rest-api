@@ -124,6 +124,15 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
 
         } catch (Throwable $throwable) {
             $connection->rollBack();
+
+            $restCheckoutErrorTransfer = new RestCheckoutErrorTransfer();
+            $restCheckoutErrorTransfer->setDetail($throwable->getMessage());
+            $restCheckoutErrorTransfer->setCode(Response::HTTP_GATEWAY_TIMEOUT);
+
+            $restCheckoutResponseTransfer = new RestCheckoutResponseTransfer();
+            $restCheckoutResponseTransfer->setIsSuccess(false);
+            $restCheckoutResponseTransfer->addError($restCheckoutErrorTransfer);
+            $this->addInvalidRestCheckoutResponseTransfer($restCheckoutResponseTransfer);
         }
 
         return $this->createMultipleRestCheckoutResponseTransfer($checkoutResponseQuoteCollectionTransfer);
@@ -199,9 +208,9 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
             foreach ($invalidRestCheckoutResponseTransfers->getErrors() as $errorTransfer) {
                 $restCheckoutResponseTransfer->addError(
                     (new RestCheckoutErrorTransfer())
-                        ->setStatus($errorTransfer->getErrorCode())
-                        ->setCode(CheckoutRestApiConfig::RESPONSE_CODE_ORDER_NOT_PLACED)
-                        ->setDetail($errorTransfer->getMessage())
+                        ->setStatus(Response::HTTP_GATEWAY_TIMEOUT)
+                        ->setCode(Response::HTTP_GATEWAY_TIMEOUT)
+                        ->setDetail($errorTransfer->getDetail())
                         ->setParameters($errorTransfer->getParameters())
                 );
             }
@@ -211,7 +220,7 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
             $restCheckoutResponseTransfer->addError(
                 (new RestCheckoutErrorTransfer())
                     ->setStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
-                    ->setCode(CheckoutRestApiConfig::RESPONSE_CODE_ORDER_NOT_PLACED)
+                    ->setCode(Response::HTTP_UNPROCESSABLE_ENTITY)
                     ->setDetail(CheckoutRestApiConfig::RESPONSE_DETAILS_ORDER_NOT_PLACED)
             );
         }
