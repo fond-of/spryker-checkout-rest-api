@@ -266,7 +266,7 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
     {
         $newItemTransfers = new ArrayObject();
         foreach ($originalQuoteTransfer->getItems() as $itemTransfer) {
-            if ($itemTransfer->getDeliveryTime() === $itemTransferToRemove->getDeliveryTime()
+            if ($itemTransfer->getDeliveryDate() === $itemTransferToRemove->getDeliveryDate()
                 && $itemTransfer->getSku() === $itemTransferToRemove->getSku()
                 && $itemTransfer->getQuantity() === $itemTransferToRemove->getQuantity()) {
 

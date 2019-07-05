@@ -105,7 +105,7 @@ class QuoteCreatorByDeliveryDate implements QuoteCreatorByDeliveryDateInterface
      */
     protected function addItemTransferGroupedByDeliveryDate(ItemTransfer $itemTransfer): void
     {
-        $this->itemTransfersByDeliveryDate[$itemTransfer->getDeliveryTime()][] = $itemTransfer;
+        $this->itemTransfersByDeliveryDate[$itemTransfer->getDeliveryDate()][] = $itemTransfer;
     }
 
     /**
