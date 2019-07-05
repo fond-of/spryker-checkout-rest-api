@@ -22,9 +22,10 @@ class CheckoutRestApiFactory extends SprykerCheckoutRestApiFactory
         return new CheckoutProcessor(
             $this->getClient(),
             $this->getResourceBuilder(),
-            $this->getGlossaryStorageClient(),
             $this->createCheckoutRequestAttributesExpander(),
-            $this->createCheckoutRequestValidator()
+            $this->createCheckoutRequestValidator(),
+            $this->createRestCheckoutErrorMapper(),
+            $this->createCheckoutResponseMapper()
         );
     }
 }

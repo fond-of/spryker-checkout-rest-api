@@ -8,7 +8,8 @@ use FondOfSpryker\Client\CheckoutRestApi\CheckoutRestApiClientInterface;
 use Generated\Shared\Transfer\RestCheckoutMultipleResponseAttributesTransfer;
 use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
 use Spryker\Glue\CheckoutRestApi\CheckoutRestApiConfig;
-use Spryker\Glue\CheckoutRestApi\Dependency\Client\CheckoutRestApiToGlossaryStorageClientInterface;
+use Spryker\Glue\CheckoutRestApi\Processor\Checkout\CheckoutResponseMapperInterface;
+use Spryker\Glue\CheckoutRestApi\Processor\Error\RestCheckoutErrorMapperInterface;
 use Spryker\Glue\CheckoutRestApi\Processor\RequestAttributesExpander\CheckoutRequestAttributesExpanderInterface;
 use Spryker\Glue\CheckoutRestApi\Processor\Validator\CheckoutRequestValidatorInterface;
 use Spryker\Glue\GlueApplication\Rest\JsonApi\RestResourceBuilderInterface;
@@ -26,23 +27,26 @@ class CheckoutProcessor extends SprykerCheckoutProcessor implements CheckoutProc
     /**
      * @param \FondOfSpryker\Client\CheckoutRestApi\CheckoutRestApiClientInterface $fondOfCheckoutRestApiClient
      * @param \Spryker\Glue\GlueApplication\Rest\JsonApi\RestResourceBuilderInterface $restResourceBuilder
-     * @param \Spryker\Glue\CheckoutRestApi\Dependency\Client\CheckoutRestApiToGlossaryStorageClientInterface $glossaryStorageClient
      * @param \Spryker\Glue\CheckoutRestApi\Processor\RequestAttributesExpander\CheckoutRequestAttributesExpanderInterface $checkoutRequestAttributesExpander
      * @param \Spryker\Glue\CheckoutRestApi\Processor\Validator\CheckoutRequestValidatorInterface $checkoutRequestValidator
+     * @param \Spryker\Glue\CheckoutRestApi\Processor\Error\RestCheckoutErrorMapperInterface $restCheckoutErrorMapper
+     * @param \Spryker\Glue\CheckoutRestApi\Processor\Checkout\CheckoutResponseMapperInterface $checkoutResponseMapper
      */
     public function __construct(
         CheckoutRestApiClientInterface $fondOfCheckoutRestApiClient,
         RestResourceBuilderInterface $restResourceBuilder,
-        CheckoutRestApiToGlossaryStorageClientInterface $glossaryStorageClient,
         CheckoutRequestAttributesExpanderInterface $checkoutRequestAttributesExpander,
-        CheckoutRequestValidatorInterface $checkoutRequestValidator
+        CheckoutRequestValidatorInterface $checkoutRequestValidator,
+        RestCheckoutErrorMapperInterface $restCheckoutErrorMapper,
+        CheckoutResponseMapperInterface $checkoutResponseMapper
     ) {
         parent::__construct(
             $fondOfCheckoutRestApiClient,
             $restResourceBuilder,
-            $glossaryStorageClient,
             $checkoutRequestAttributesExpander,
-            $checkoutRequestValidator
+            $checkoutRequestValidator,
+            $restCheckoutErrorMapper,
+            $checkoutResponseMapper
         );
 
         $this->fondOfCheckoutRestApiClient = $fondOfCheckoutRestApiClient;
