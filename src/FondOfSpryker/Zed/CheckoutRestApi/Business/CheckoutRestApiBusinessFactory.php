@@ -29,6 +29,7 @@ class CheckoutRestApiBusinessFactory extends SprykerCheckoutRestApiBusinessFacto
             $this->getQuoteFacade(),
             $this->getCalculationFacade(),
             $this->getQuoteMapperPlugins(),
+            $this->getCheckoutDataValidatorPlugins(),
             $this->createQuoteCreatorByDeliveryDate(),
             $this->getQuoteFacadeReal()
         );

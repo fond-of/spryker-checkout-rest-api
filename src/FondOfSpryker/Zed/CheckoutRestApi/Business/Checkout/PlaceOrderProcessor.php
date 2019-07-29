@@ -49,6 +49,7 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
      * @param \Spryker\Zed\CheckoutRestApi\Dependency\Facade\CheckoutRestApiToQuoteFacadeInterface $quoteFacade
      * @param \Spryker\Zed\CheckoutRestApi\Dependency\Facade\CheckoutRestApiToCalculationFacadeInterface $calculationFacade
      * @param \Spryker\Zed\CheckoutRestApiExtension\Dependency\Plugin\QuoteMapperPluginInterface[] $quoteMapperPlugins
+     * @param \Spryker\Zed\CheckoutRestApiExtension\Dependency\Plugin\CheckoutDataValidatorPluginInterface[] $checkoutDataValidatorPlugins
      * @param \FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\QuoteCreatorByDeliveryDateInterface $quoteCreatorByDeliveryDate
      * @param \Spryker\Zed\Quote\Business\QuoteFacadeInterface $quoteFacadeReal
      */
@@ -59,10 +60,11 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
         CheckoutRestApiToQuoteFacadeInterface $quoteFacade,
         CheckoutRestApiToCalculationFacadeInterface $calculationFacade,
         array $quoteMapperPlugins,
+        array $checkoutDataValidatorPlugins,
         QuoteCreatorByDeliveryDateInterface $quoteCreatorByDeliveryDate,
         QuoteFacadeInterface $quoteFacadeReal
     ) {
-        parent::__construct($quoteReader, $cartFacade, $checkoutFacade, $quoteFacade, $calculationFacade, $quoteMapperPlugins);
+        parent::__construct($quoteReader, $cartFacade, $checkoutFacade, $quoteFacade, $calculationFacade, $quoteMapperPlugins, $checkoutDataValidatorPlugins);
         $this->quoteCreatorByDeliveryDate = $quoteCreatorByDeliveryDate;
         $this->invalidRestCheckoutResponseTransfers = new ArrayObject();
         $this->quoteFacadeReal = $quoteFacadeReal;
