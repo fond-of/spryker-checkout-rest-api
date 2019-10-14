@@ -87,7 +87,7 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
 
         // split original, create and persist child quotes.
         $invalidatedQuoteCollectionTransfer = $this->quoteCreatorByDeliveryDate->createAndPersistChildQuotesByDeliveryDate(
-            $originalQuoteTransfer = $this->prepareQuoteTransfer($restCheckoutRequestAttributesTransfer, $originalQuoteTransfer)
+            $originalQuoteTransfer = $this->recalculateQuote($originalQuoteTransfer)
         );
 
         $checkoutResponseQuoteCollectionTransfer = null;
