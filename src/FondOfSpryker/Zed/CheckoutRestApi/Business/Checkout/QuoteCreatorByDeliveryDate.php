@@ -156,8 +156,8 @@ class QuoteCreatorByDeliveryDate implements QuoteCreatorByDeliveryDateInterface
     protected function setOriginalQuoteAsDefault(QuoteTransfer $originalQuoteTransfer): QuoteTransfer
     {
         $quoteActivationRequestTransfer = new QuoteActivationRequestTransfer();
-        $quoteActivationRequestTransfer->setCustomer($originalQuoteTransfer->getCustomer());
-        $quoteActivationRequestTransfer->setIdQuote($originalQuoteTransfer->getIdQuote());
+        $quoteActivationRequestTransfer->setCustomer($originalQuoteTransfer->getCustomer())
+            ->setIdQuote($originalQuoteTransfer->getIdQuote());
         $quoteResponseTransfer = $this->multiCartFacade->setDefaultQuote($quoteActivationRequestTransfer);
 
         if ($quoteResponseTransfer->getIsSuccessful()) {
@@ -174,14 +174,14 @@ class QuoteCreatorByDeliveryDate implements QuoteCreatorByDeliveryDateInterface
      */
     protected function createQuoteTransferFromOriginalQuoteTransfer(QuoteTransfer $originalQuoteTransfer): QuoteTransfer
     {
-        $quote = new QuoteTransfer();
-        $quote->fromArray($originalQuoteTransfer->toArray());
-        $quote->setIdQuote(null);
-        $quote->setUuid(null);
-        $quote->setItems(new ArrayObject());
-        $quote->setIsDefault(false);
+        $quoteTransfer = new QuoteTransfer();
+        $quoteTransfer->fromArray($originalQuoteTransfer->toArray())
+            ->setIdQuote(null)
+            ->setUuid(null)
+            ->setItems(new ArrayObject())
+            ->setIsDefault(false);
 
-        return $quote;
+        return $quoteTransfer;
     }
 
     /**
@@ -212,8 +212,8 @@ class QuoteCreatorByDeliveryDate implements QuoteCreatorByDeliveryDateInterface
     protected function addItemTransfersToQuote(QuoteTransfer $quoteTransfer, array $itemTransfers): QuoteTransfer
     {
         $persistentCartChangeTransfer = new PersistentCartChangeTransfer();
-        $persistentCartChangeTransfer->setIdQuote($quoteTransfer->getIdQuote());
-        $persistentCartChangeTransfer->setCustomer($quoteTransfer->getCustomer());
+        $persistentCartChangeTransfer->setIdQuote($quoteTransfer->getIdQuote())
+            ->setCustomer($quoteTransfer->getCustomer());
 
         foreach ($itemTransfers as $itemTransfer) {
             $persistentCartChangeTransfer->addItem($itemTransfer);
