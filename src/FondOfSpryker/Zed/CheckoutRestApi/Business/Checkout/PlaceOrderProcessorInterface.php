@@ -4,7 +4,7 @@ namespace FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout;
 
 use Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer;
 use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
-use Spryker\Zed\CheckoutRestApi\Business\Checkout\PlaceOrderProcessorInterface as sprykerPlaceOrderProcessorInterface;
+use Spryker\Zed\CheckoutRestApi\Business\Checkout\PlaceOrderProcessorInterface as SprykerPlaceOrderProcessorInterface;
 
 interface PlaceOrderProcessorInterface extends SprykerPlaceOrderProcessorInterface
 {

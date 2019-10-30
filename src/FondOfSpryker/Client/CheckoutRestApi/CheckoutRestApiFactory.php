@@ -1,12 +1,12 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace FondOfSpryker\Client\CheckoutRestApi;
 
 use FondOfSpryker\Client\CheckoutRestApi\Zed\CheckoutRestApiZedStub;
-use Spryker\Client\CheckoutRestApi\Zed\CheckoutRestApiZedStubInterface;
 use Spryker\Client\CheckoutRestApi\CheckoutRestApiFactory as SprykerCheckoutRestApiFactory;
+use Spryker\Client\CheckoutRestApi\Zed\CheckoutRestApiZedStubInterface;
 
 class CheckoutRestApiFactory extends SprykerCheckoutRestApiFactory
 {

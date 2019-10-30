@@ -6,8 +6,8 @@ use FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\PlaceOrderProcessor;
 use FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\PlaceOrderProcessorInterface;
 use FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\QuoteCreatorByDeliveryDate;
 use FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\QuoteCreatorByDeliveryDateInterface;
-use Spryker\Zed\CheckoutRestApi\Business\CheckoutRestApiBusinessFactory as SprykerCheckoutRestApiBusinessFactory;
 use FondOfSpryker\Zed\CheckoutRestApi\CheckoutRestApiDependencyProvider;
+use Spryker\Zed\CheckoutRestApi\Business\CheckoutRestApiBusinessFactory as SprykerCheckoutRestApiBusinessFactory;
 use Spryker\Zed\MultiCart\Business\MultiCartFacadeInterface;
 use Spryker\Zed\PersistentCart\Business\PersistentCartFacadeInterface;
 use Spryker\Zed\Quote\Business\QuoteFacadeInterface;
@@ -36,8 +36,6 @@ class CheckoutRestApiBusinessFactory extends SprykerCheckoutRestApiBusinessFacto
     }
 
     /**
-     * @throws \Spryker\Zed\Kernel\Exception\Container\ContainerKeyNotFoundException
-     *
      * @return \FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout\QuoteCreatorByDeliveryDateInterface
      */
     public function createQuoteCreatorByDeliveryDate(): QuoteCreatorByDeliveryDateInterface
@@ -49,7 +47,7 @@ class CheckoutRestApiBusinessFactory extends SprykerCheckoutRestApiBusinessFacto
     }
 
     /**
-     * @throws \Spryker\Zed\Kernel\Exception\Container\ContainerKeyNotFoundException
+     * @throws
      *
      * @return \Spryker\Zed\PersistentCart\Business\PersistentCartFacadeInterface
      */
@@ -59,7 +57,7 @@ class CheckoutRestApiBusinessFactory extends SprykerCheckoutRestApiBusinessFacto
     }
 
     /**
-     * @throws \Spryker\Zed\Kernel\Exception\Container\ContainerKeyNotFoundException
+     * @throws
      *
      * @return \Spryker\Zed\MultiCart\Business\MultiCartFacadeInterface
      */
@@ -69,7 +67,7 @@ class CheckoutRestApiBusinessFactory extends SprykerCheckoutRestApiBusinessFacto
     }
 
     /**
-     * @throws \Spryker\Zed\Kernel\Exception\Container\ContainerKeyNotFoundException
+     * @throws
      *
      * @return \Spryker\Zed\Quote\Business\QuoteFacadeInterface
      */

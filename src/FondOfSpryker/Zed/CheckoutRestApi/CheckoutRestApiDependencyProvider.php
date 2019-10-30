@@ -2,8 +2,8 @@
 
 namespace FondOfSpryker\Zed\CheckoutRestApi;
 
-use Spryker\Zed\Kernel\Container;
 use Spryker\Zed\CheckoutRestApi\CheckoutRestApiDependencyProvider as SprykerCheckoutRestApiDependencyProvider;
+use Spryker\Zed\Kernel\Container;
 
 /**
  * @method \Spryker\Zed\CheckoutRestApi\CheckoutRestApiConfig getConfig()

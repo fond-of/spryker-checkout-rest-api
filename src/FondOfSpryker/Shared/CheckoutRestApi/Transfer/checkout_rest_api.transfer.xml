@@ -19,7 +19,22 @@
         <property name="orderReferences" type="array" singular="orderReference" />
     </transfer>
 
+    <transfer name="Item">
+        <property name="deliveryDate" type="string"/>
+        <property name="concreteDeliveryDate" type="string"/>
+        <property name="validationMessages" type="Message[]" singular="validationMessage"/>
+    </transfer>
+
     <transfer name="RestCheckoutMultipleResponseAttributes">
         <property name="orderReferences" type="array" singular="orderReference" />
+    </transfer>
+
+    <transfer name="RestCheckoutRequestAttributes">
+        <property name="customer" type="RestCustomer" restRequestParameter="yes"/>
+        <property name="idCart" type="string" restRequestParameter="required"/>
+        <property name="billingAddress" type="RestAddress" restRequestParameter="yes"/>
+        <property name="shippingAddress" type="RestAddress" restRequestParameter="yes"/>
+        <property name="payments" type="RestPayment[]" singular="payment" restRequestParameter="yes"/>
+        <property name="shipment" type="RestShipment" restRequestParameter="yes"/>
     </transfer>
 </transfers>

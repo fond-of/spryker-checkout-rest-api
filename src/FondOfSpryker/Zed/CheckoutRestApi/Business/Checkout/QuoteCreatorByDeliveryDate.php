@@ -1,18 +1,18 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace FondOfSpryker\Zed\CheckoutRestApi\Business\Checkout;
 
+use ArrayObject;
 use Generated\Shared\Transfer\ItemTransfer;
 use Generated\Shared\Transfer\PersistentCartChangeTransfer;
 use Generated\Shared\Transfer\QuoteActivationRequestTransfer;
 use Generated\Shared\Transfer\QuoteCollectionTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
+use RuntimeException;
 use Spryker\Zed\MultiCart\Business\MultiCartFacadeInterface;
 use Spryker\Zed\PersistentCart\Business\PersistentCartFacadeInterface;
-use ArrayObject;
-use RuntimeException;
 
 class QuoteCreatorByDeliveryDate implements QuoteCreatorByDeliveryDateInterface
 {
@@ -27,12 +27,12 @@ class QuoteCreatorByDeliveryDate implements QuoteCreatorByDeliveryDateInterface
     protected $multiCartFacade;
 
     /**
-     * @var \Generated\Shared\Transfer\QuoteTransfer[]|ArrayObject
+     * @var \Generated\Shared\Transfer\QuoteTransfer[]|\ArrayObject
      */
     protected $childQuoteTransfers;
 
     /**
-     * @var \Generated\Shared\Transfer\QuoteTransfer
+     * @var array
      */
     protected $originalQuoteTransfer = [];
 
@@ -42,7 +42,9 @@ class QuoteCreatorByDeliveryDate implements QuoteCreatorByDeliveryDateInterface
     protected $itemTransfersByDeliveryDate = [];
 
     /**
-     * @param \Spryker\Zed\PersistentCart\Business\PersistentCartFacadeInterface
+     * QuoteCreatorByDeliveryDate constructor.
+     *
+     * @param \Spryker\Zed\PersistentCart\Business\PersistentCartFacadeInterface $persistentCartFacade
      * @param \Spryker\Zed\MultiCart\Business\MultiCartFacadeInterface $multiCartFacade
      */
     public function __construct(
@@ -73,7 +75,7 @@ class QuoteCreatorByDeliveryDate implements QuoteCreatorByDeliveryDateInterface
     }
 
     /**
-     * @return \Generated\Shared\Transfer\QuoteTransfer[]|\ArrayObject
+     * @return \ArrayObject
      */
     protected function getChildQuoteTransfers(): ArrayObject
     {
@@ -91,7 +93,7 @@ class QuoteCreatorByDeliveryDate implements QuoteCreatorByDeliveryDateInterface
     }
 
     /**
-     * @return \Generated\Shared\Transfer\ItemTransfer[][]
+     * @return array
      */
     protected function getItemTransfersGroupedByDeliveryDate(): array
     {
@@ -121,8 +123,6 @@ class QuoteCreatorByDeliveryDate implements QuoteCreatorByDeliveryDateInterface
 
     /**
      * @param \Generated\Shared\Transfer\QuoteTransfer $originalQuoteTransfer
-     *
-     * @throws \RuntimeException
      *
      * @return \Generated\Shared\Transfer\QuoteCollectionTransfer
      */
@@ -203,7 +203,7 @@ class QuoteCreatorByDeliveryDate implements QuoteCreatorByDeliveryDateInterface
 
     /**
      * @param \Generated\Shared\Transfer\QuoteTransfer $quoteTransfer
-     * @param \Generated\Shared\Transfer\ItemTransfer[] $itemTransfers
+     * @param array $itemTransfers
      *
      * @throws \RuntimeException
      *

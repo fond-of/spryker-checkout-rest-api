@@ -10,23 +10,25 @@ use Generated\Shared\Transfer\QuoteCollectionTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RestCheckoutErrorTransfer;
 use Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer;
-use Propel\Runtime\Propel;
-use Spryker\Glue\CheckoutRestApi\CheckoutRestApiConfig;
 use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
-use Spryker\Zed\CheckoutRestApi\Business\Checkout\PlaceOrderProcessor as SprykerPlaceOrderProcessor;
 use Generated\Shared\Transfer\RestCheckoutResponseTransfer;
+use RuntimeException;
+use Spryker\Glue\CheckoutRestApi\CheckoutRestApiConfig;
+use Spryker\Zed\CheckoutRestApi\Business\Checkout\PlaceOrderProcessor as SprykerPlaceOrderProcessor;
+use Spryker\Zed\CheckoutRestApi\Business\Checkout\Quote\QuoteReaderInterface;
 use Spryker\Zed\CheckoutRestApi\Dependency\Facade\CheckoutRestApiToCalculationFacadeInterface;
 use Spryker\Zed\CheckoutRestApi\Dependency\Facade\CheckoutRestApiToCartFacadeInterface;
 use Spryker\Zed\CheckoutRestApi\Dependency\Facade\CheckoutRestApiToCheckoutFacadeInterface;
 use Spryker\Zed\CheckoutRestApi\Dependency\Facade\CheckoutRestApiToQuoteFacadeInterface;
-use Spryker\Zed\CheckoutRestApi\Business\Checkout\Quote\QuoteReaderInterface;
+use Spryker\Zed\PropelOrm\Business\Transaction\DatabaseTransactionHandlerTrait;
 use Spryker\Zed\Quote\Business\QuoteFacadeInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
-use RuntimeException;
 
 class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrderProcessorInterface
 {
+    use DatabaseTransactionHandlerTrait;
+
     /**
      * @var \Spryker\Zed\Quote\Business\QuoteFacadeInterface
      */
@@ -38,7 +40,7 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
     protected $quoteCreatorByDeliveryDate;
 
     /**
-     * @var \Generated\Shared\Transfer\RestCheckoutResponseTransfer[]|ArrayObject
+     * @var \Generated\Shared\Transfer\RestCheckoutResponseTransfer[]|\ArrayObject
      */
     protected $invalidRestCheckoutResponseTransfers;
 
@@ -73,21 +75,32 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
     /**
      * @param \Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer
      *
+     * @throws
+     *
      * @return \Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer
      */
     public function placeOrderSplit(RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestCheckoutMultipleResponseTransfer
+    {
+        return $this->handleDatabaseTransaction(function () use ($restCheckoutRequestAttributesTransfer) {
+            return $this->handlePlaceOrderSplit($restCheckoutRequestAttributesTransfer);
+        });
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer
+     *
+     * @return \Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer
+     */
+    protected function handlePlaceOrderSplit(RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestCheckoutMultipleResponseTransfer
     {
         $originalQuoteTransfer = $this->quoteReader->findCustomerQuoteByUuid($restCheckoutRequestAttributesTransfer);
         if ($originalQuoteTransfer === null || $this->isQuoteTransferValid($originalQuoteTransfer) === false) {
             return $this->createMultipleRestCheckoutResponseTransfer();
         }
 
-        $connection = Propel::getConnection();
-        $connection->beginTransaction();
-
         // split original, create and persist child quotes.
         $invalidatedQuoteCollectionTransfer = $this->quoteCreatorByDeliveryDate->createAndPersistChildQuotesByDeliveryDate(
-            $originalQuoteTransfer = $this->recalculateQuote($originalQuoteTransfer)
+            ($originalQuoteTransfer = $this->recalculateQuote($originalQuoteTransfer))
         );
 
         $checkoutResponseQuoteCollectionTransfer = null;
@@ -100,7 +113,8 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
 
             // Run mapper plugins and recalculate child quotes
             $validatedQuoteTransferCollection = $this->prepareQuoteCollectionTransfer(
-                $restCheckoutRequestAttributesTransfer, $validatedQuoteTransferCollection
+                $restCheckoutRequestAttributesTransfer,
+                $validatedQuoteTransferCollection
             );
 
             // place orders
@@ -118,40 +132,45 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
 
             // remove all child quotes, remove original quote if all place orders were successful.
             $this->deleteQuoteCollectionTransfer($validatedQuoteTransferCollection);
-            if (! $this->hasInvalidCheckoutResponseTransfers($checkoutResponseQuoteCollectionTransfer)) {
+            if (!$this->hasInvalidCheckoutResponseTransfers($checkoutResponseQuoteCollectionTransfer)) {
                 $this->deleteQuoteTransfer($originalQuoteTransfer);
             }
-
-            $connection->commit();
-
         } catch (Throwable $throwable) {
-            $connection->rollBack();
-
-            $restCheckoutErrorTransfer = new RestCheckoutErrorTransfer();
-            $restCheckoutErrorTransfer->setDetail($throwable->getMessage());
-            $restCheckoutErrorTransfer->setCode(Response::HTTP_GATEWAY_TIMEOUT);
-
-            $restCheckoutResponseTransfer = new RestCheckoutResponseTransfer();
-            $restCheckoutResponseTransfer->setIsSuccess(false);
-            $restCheckoutResponseTransfer->addError($restCheckoutErrorTransfer);
-            $this->addInvalidRestCheckoutResponseTransfer($restCheckoutResponseTransfer);
+            $this->createInvalidRestCheckoutResponseTransfer($throwable);
         }
 
         return $this->createMultipleRestCheckoutResponseTransfer($checkoutResponseQuoteCollectionTransfer);
     }
 
     /**
+     * @param \Throwable $throwable
+     *
+     * @return void
+     */
+    protected function createInvalidRestCheckoutResponseTransfer(Throwable $throwable): void
+    {
+        $restCheckoutErrorTransfer = new RestCheckoutErrorTransfer();
+        $restCheckoutErrorTransfer->setDetail($throwable->getMessage());
+        $restCheckoutErrorTransfer->setCode(Response::HTTP_GATEWAY_TIMEOUT);
+
+        $restCheckoutResponseTransfer = new RestCheckoutResponseTransfer();
+        $restCheckoutResponseTransfer->setIsSuccess(false);
+        $restCheckoutResponseTransfer->addError($restCheckoutErrorTransfer);
+        $this->addInvalidRestCheckoutResponseTransfer($restCheckoutResponseTransfer);
+    }
+
+    /**
      * @param \Generated\Shared\Transfer\QuoteTransfer $originalQuoteTransfer
      *
-     * @throws RuntimeException
+     * @throws \RuntimeException
      *
-     * @return QuoteTransfer
+     * @return \Generated\Shared\Transfer\QuoteTransfer
      */
     public function updateOriginalQuote(QuoteTransfer $originalQuoteTransfer): QuoteTransfer
     {
         $originalQuoteTransfer = $this->recalculateQuote($originalQuoteTransfer);
         $originalQuoteResponseTransfer = $this->quoteFacadeReal->updateQuote($originalQuoteTransfer);
-        if (! $originalQuoteResponseTransfer->getIsSuccessful()) {
+        if (!$originalQuoteResponseTransfer->getIsSuccessful()) {
             throw new RuntimeException('Could not update original quote facade');
         }
 
@@ -165,7 +184,7 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
      */
     protected function createMultipleRestCheckoutResponseTransfer(
         ?CheckoutResponseQuoteCollectionTransfer $checkoutResponseQuoteCollectionTransfer = null
-    ) : RestCheckoutMultipleResponseTransfer {
+    ): RestCheckoutMultipleResponseTransfer {
 
         $restCheckoutResponseTransfer = new RestCheckoutMultipleResponseTransfer();
         $restCheckoutResponseTransfer->setIsSuccess(true);
@@ -245,7 +264,7 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
         QuoteTransfer $originalQuoteTransfer
     ): QuoteTransfer {
         foreach ($checkoutResponseQuoteCollectionTransfer->getCheckoutResponseQuotes() as $checkoutResponseQuote) {
-            if ($checkoutResponseQuote->getQuoteTransfer() === null || ! $checkoutResponseQuote->getIsSuccess()) {
+            if (!$checkoutResponseQuote->getIsSuccess()) {
                 continue;
             }
 
@@ -271,7 +290,6 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
             if ($itemTransfer->getDeliveryDate() === $itemTransferToRemove->getDeliveryDate()
                 && $itemTransfer->getSku() === $itemTransferToRemove->getSku()
                 && $itemTransfer->getQuantity() === $itemTransferToRemove->getQuantity()) {
-
                 continue;
             }
 
@@ -323,8 +341,7 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
         if (!$quoteResponseTransfer->getIsSuccessful()) {
             $invalidRestCheckoutResponseTransfer = $this->createQuoteResponseError(
                 $quoteResponseTransfer,
-                CheckoutRestApiConfig::RESPONSE_CODE_UNABLE_TO_DELETE_CART,
-                CheckoutRestApiConfig::RESPONSE_DETAILS_UNABLE_TO_DELETE_CART
+                CheckoutRestApiConfig::RESPONSE_CODE_UNABLE_TO_DELETE_CART
             );
 
             $this->addInvalidRestCheckoutResponseTransfer($invalidRestCheckoutResponseTransfer);
@@ -344,7 +361,7 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
             $checkoutResponseTransfer = $this->executePlaceOrder($quoteTransfer);
 
             // create invalid rest checkout response transfers and append them to the list.
-            if (!$checkoutResponseTransfer->getIsSuccess()) {
+            if ($checkoutResponseTransfer->getSaveOrder()->getIdSalesOrder() === null) {
                 $this->addInvalidRestCheckoutResponseTransfer(
                     $this->createPlaceOrderErrorResponse($checkoutResponseTransfer)
                 );
@@ -353,7 +370,7 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
             $checkoutResponseQuoteTransfer = new CheckoutResponseQuoteTransfer();
             $checkoutResponseQuoteTransfer->setQuoteTransfer($quoteTransfer);
             $checkoutResponseQuoteTransfer->setCheckoutResponse($checkoutResponseTransfer);
-            $checkoutResponseQuoteTransfer->setIsSuccess($checkoutResponseTransfer->getIsSuccess());
+            $checkoutResponseQuoteTransfer->setIsSuccess($checkoutResponseTransfer->getSaveOrder()->getIdSalesOrder() !== null);
 
             $checkoutResponseQuoteCollectionTransfer->addCheckoutResponseQuote(
                 $checkoutResponseQuoteTransfer
