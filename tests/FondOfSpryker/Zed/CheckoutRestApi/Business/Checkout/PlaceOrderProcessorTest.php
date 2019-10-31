@@ -10,6 +10,7 @@ use Generated\Shared\Transfer\QuoteCollectionTransfer;
 use Generated\Shared\Transfer\QuoteErrorTransfer;
 use Generated\Shared\Transfer\QuoteResponseTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
+use Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer;
 use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
 use Generated\Shared\Transfer\SaveOrderTransfer;
 use ReflectionClass;
@@ -129,6 +130,11 @@ class PlaceOrderProcessorTest extends Unit
     protected $saveOrderTransferMock;
 
     /**
+     * @var int
+     */
+    protected $idSalesOrder;
+
+    /**
      * @return void
      */
     protected function _before(): void
@@ -215,6 +221,8 @@ class PlaceOrderProcessorTest extends Unit
             ->disableOriginalConstructor()
             ->getMock();
 
+        $this->idSalesOrder = 1;
+
         $this->placeOrderProcessor = new PlaceOrderProcessor(
             $this->quoteReaderInterfaceMock,
             $this->checkoutRestApiToCartFacadeInterfaceMock,
@@ -231,7 +239,6 @@ class PlaceOrderProcessorTest extends Unit
     /**
      * @return void
      */
-    /*
     public function testHandlePlaceOrderSplit(): void
     {
         $reflectionMethod = $this->getReflectionMethodByName('handlePlaceOrderSplit');
@@ -250,7 +257,7 @@ class PlaceOrderProcessorTest extends Unit
 
         $this->quoteResponseTransferMock->expects($this->atLeastOnce())
             ->method('getIsSuccessful')
-            ->willReturnOnConsecutiveCalls(true, true, true, false);
+            ->willReturn(true);
 
         $this->checkoutRestApiToCalculationFacadeInterfaceMock->expects($this->atLeast(2))
             ->method('recalculateQuote')
@@ -276,33 +283,27 @@ class PlaceOrderProcessorTest extends Unit
             ->method('placeOrder')
             ->willReturn($this->checkoutResponseTransferMock);
 
-        $this->checkoutResponseTransferMock->expects($this->atLeast(2))
-            ->method('getIsSuccess')
-            ->willReturn(true);
+        $this->checkoutResponseTransferMock->expects($this->atLeastOnce())
+            ->method('getSaveOrder')
+            ->willReturn($this->saveOrderTransferMock);
+
+        $this->saveOrderTransferMock->expects($this->atLeastOnce())
+            ->method('getIdSalesOrder')
+            ->willReturn($this->idSalesOrder);
 
         $this->checkoutRestApiToQuoteFacadeInterfaceMock->expects($this->atLeastOnce())
             ->method('deleteQuote')
             ->willReturn($this->quoteResponseTransferMock);
-
-        $this->quoteResponseTransferMock->expects($this->atLeastOnce())
-            ->method('getErrors')
-            ->willReturn(new ArrayObject([]));
-
-        $this->checkoutResponseTransferMock->expects($this->atLeastOnce())
-            ->method('getSaveOrder')
-            ->willReturn($this->saveOrderTransferMock);
 
         $this->assertInstanceOf(
             RestCheckoutMultipleResponseTransfer::class,
             $reflectionMethod->invokeArgs($this->placeOrderProcessor, [$this->restCheckoutRequestAttributesTransferMock])
         );
     }
-    */
 
     /**
      * @return void
      */
-    /*
     public function testHandlePlaceOrderSplitQuoteTransferInvalidErrorsNull(): void
     {
         $reflectionMethod = $this->getReflectionMethodByName('handlePlaceOrderSplit');
@@ -332,12 +333,10 @@ class PlaceOrderProcessorTest extends Unit
             $reflectionMethod->invokeArgs($this->placeOrderProcessor, [$this->restCheckoutRequestAttributesTransferMock])
         );
     }
-    */
 
     /**
      * @return void
      */
-    /*
     public function testHandlePlaceOrderSplitOnlyFirstQuoteResponseTransferIsSuccessful(): void
     {
         $reflectionMethod = $this->getReflectionMethodByName('handlePlaceOrderSplit');
@@ -374,10 +373,6 @@ class PlaceOrderProcessorTest extends Unit
             ->method('validateQuote')
             ->willReturn($this->quoteResponseTransferMock);
 
-        $this->quoteResponseTransferMock->expects($this->atLeastOnce())
-            ->method('getIsSuccessful')
-            ->willReturn(true);
-
         $this->quoteCollectionTransferMock->expects($this->atLeastOnce())
             ->method('getQuotes')
             ->willReturn($this->quoteTransfers);
@@ -387,11 +382,19 @@ class PlaceOrderProcessorTest extends Unit
             ->willReturn($this->checkoutResponseTransferMock);
 
         $this->checkoutResponseTransferMock->expects($this->atLeastOnce())
-            ->method('getIsSuccess')
-            ->willReturnOnConsecutiveCalls(true, false);
+            ->method('getSaveOrder')
+            ->willReturn($this->saveOrderTransferMock);
+
+        $this->saveOrderTransferMock->expects($this->atLeastOnce())
+            ->method('getIdSalesOrder')
+            ->willReturnOnConsecutiveCalls($this->idSalesOrder, null);
 
         $this->quoteFacadeInterfaceMock->expects($this->atLeastOnce())
             ->method('updateQuote')
+            ->willReturn($this->quoteResponseTransferMock);
+
+        $this->checkoutRestApiToQuoteFacadeInterfaceMock->expects($this->atLeastOnce())
+            ->method('deleteQuote')
             ->willReturn($this->quoteResponseTransferMock);
 
         $this->assertInstanceOf(
@@ -399,12 +402,10 @@ class PlaceOrderProcessorTest extends Unit
             $reflectionMethod->invokeArgs($this->placeOrderProcessor, [$this->restCheckoutRequestAttributesTransferMock])
         );
     }
-    */
 
     /**
      * @return void
      */
-    /*
     public function testHandlePlaceOrderSplitOnlyFirstQuoteResponseTransferIsSuccessfulUpdateException(): void
     {
         $reflectionMethod = $this->getReflectionMethodByName('handlePlaceOrderSplit');
@@ -421,10 +422,6 @@ class PlaceOrderProcessorTest extends Unit
             ->method('validateQuote')
             ->willReturn($this->quoteResponseTransferMock);
 
-        $this->quoteResponseTransferMock->expects($this->atLeastOnce())
-            ->method('getIsSuccessful')
-            ->willReturn(true);
-
         $this->checkoutRestApiToCalculationFacadeInterfaceMock->expects($this->atLeast(2))
             ->method('recalculateQuote')
             ->willReturn($this->quoteTransferMock);
@@ -443,7 +440,7 @@ class PlaceOrderProcessorTest extends Unit
 
         $this->quoteResponseTransferMock->expects($this->atLeastOnce())
             ->method('getIsSuccessful')
-            ->willReturn(true);
+            ->willReturnOnConsecutiveCalls(true, true, false);
 
         $this->quoteCollectionTransferMock->expects($this->atLeastOnce())
             ->method('getQuotes')
@@ -454,78 +451,22 @@ class PlaceOrderProcessorTest extends Unit
             ->willReturn($this->checkoutResponseTransferMock);
 
         $this->checkoutResponseTransferMock->expects($this->atLeastOnce())
-            ->method('getIsSuccess')
-            ->willReturnOnConsecutiveCalls(true, false);
+            ->method('getSaveOrder')
+            ->willReturn($this->saveOrderTransferMock);
+
+        $this->saveOrderTransferMock->expects($this->atLeastOnce())
+            ->method('getIdSalesOrder')
+            ->willReturnOnConsecutiveCalls($this->idSalesOrder, null);
+
+        $this->quoteFacadeInterfaceMock->expects($this->atLeastOnce())
+            ->method('updateQuote')
+            ->willReturn($this->quoteResponseTransferMock);
 
         $this->assertInstanceOf(
             RestCheckoutMultipleResponseTransfer::class,
             $reflectionMethod->invokeArgs($this->placeOrderProcessor, [$this->restCheckoutRequestAttributesTransferMock])
         );
     }
-    */
-
-    /**
-     * @return void
-     */
-    /*
-    public function testHandlePlaceOrderSplitQuoteResponseTransferIsNotSuccessful(): void
-    {
-        $reflectionMethod = $this->getReflectionMethodByName('handlePlaceOrderSplit');
-
-        $this->quoteReaderInterfaceMock->expects($this->atLeastOnce())
-            ->method('findCustomerQuoteByUuid')
-            ->willReturn($this->quoteTransferMock);
-
-        $this->quoteTransferMock->expects($this->atLeastOnce())
-            ->method('getItems')
-            ->willReturn($this->itemTransfers);
-
-        $this->checkoutRestApiToCartFacadeInterfaceMock->expects($this->atLeastOnce())
-            ->method('validateQuote')
-            ->willReturn($this->quoteResponseTransferMock);
-
-        $this->quoteResponseTransferMock->expects($this->atLeastOnce())
-            ->method('getIsSuccessful')
-            ->willReturn(true);
-
-        $this->checkoutRestApiToCalculationFacadeInterfaceMock->expects($this->atLeast(2))
-            ->method('recalculateQuote')
-            ->willReturn($this->quoteTransferMock);
-
-        $this->quoteCreatorByDeliveryDateInterfaceMock->expects($this->atLeastOnce())
-            ->method('createAndPersistChildQuotesByDeliveryDate')
-            ->willReturn($this->quoteCollectionTransferMock);
-
-        $this->quoteCollectionTransferMock->expects($this->atLeastOnce())
-            ->method('getQuotes')
-            ->willReturn($this->quoteTransfers);
-
-        $this->checkoutRestApiToCartFacadeInterfaceMock->expects($this->atLeastOnce())
-            ->method('validateQuote')
-            ->willReturn($this->quoteResponseTransferMock);
-
-        $this->quoteResponseTransferMock->expects($this->atLeast(2))
-            ->method('getIsSuccessful')
-            ->willReturn(true);
-
-        $this->quoteCollectionTransferMock->expects($this->atLeastOnce())
-            ->method('getQuotes')
-            ->willReturn($this->quoteTransfers);
-
-        $this->checkoutRestApiToCheckoutFacadeInterfaceMock->expects($this->atLeastOnce())
-            ->method('placeOrder')
-            ->willReturn($this->checkoutResponseTransferMock);
-
-        $this->checkoutResponseTransferMock->expects($this->atLeastOnce())
-            ->method('getIsSuccess')
-            ->willReturn(false);
-
-        $this->assertInstanceOf(
-            RestCheckoutMultipleResponseTransfer::class,
-            $reflectionMethod->invokeArgs($this->placeOrderProcessor, [$this->restCheckoutRequestAttributesTransferMock])
-        );
-    }
-    */
 
     /**
      * @param string $name
