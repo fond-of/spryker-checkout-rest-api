@@ -8,4 +8,6 @@ use Spryker\Glue\CheckoutRestApi\CheckoutRestApiConfig as SprykerCheckoutRestApi
 
 class CheckoutRestApiConfig extends SprykerCheckoutRestApiConfig
 {
+    public const RESPONSE_CODE_ACCESS_DENIED = '1110';
+    public const RESPONSE_MESSAGE_ACCESS_DENIED = 'Access Denied';
 }
