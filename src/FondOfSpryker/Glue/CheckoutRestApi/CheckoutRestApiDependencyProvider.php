@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace FondOfSpryker\Glue\CheckoutRestApi;
 
 use Spryker\Glue\Kernel\Container;
-use Pyz\Glue\CheckoutRestApi\CheckoutRestApiDependencyProvider as SprykerCheckoutRestApiDependencyProvider;
+use Spryker\Glue\CheckoutRestApi\CheckoutRestApiDependencyProvider as SprykerCheckoutRestApiDependencyProvider;
 
 /**
  * @method \FondOfSpryker\Glue\CheckoutRestApi\CheckoutRestApiConfig getConfig()

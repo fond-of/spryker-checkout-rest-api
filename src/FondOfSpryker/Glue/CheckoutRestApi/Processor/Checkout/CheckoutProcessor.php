@@ -10,10 +10,12 @@ use FondOfSpryker\Client\CompanyUsersRestApi\CompanyUsersRestApiClientInterface;
 use FondOfSpryker\Glue\CheckoutRestApi\Processor\Validation\RestApiErrorInterface;
 use Generated\Shared\Transfer\CompanyUserResponseTransfer;
 use Generated\Shared\Transfer\CompanyUserTransfer;
+use Generated\Shared\Transfer\CustomerTransfer;
 use Generated\Shared\Transfer\QuoteResponseTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RestCheckoutMultipleResponseAttributesTransfer;
 use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
+use Generated\Shared\Transfer\RestUserTransfer;
 use Spryker\Client\CartsRestApi\CartsRestApiClientInterface;
 use Spryker\Glue\CheckoutRestApi\CheckoutRestApiConfig;
 use Spryker\Glue\CheckoutRestApi\Processor\Checkout\CheckoutResponseMapperInterface;
@@ -100,7 +102,12 @@ class CheckoutProcessor extends SprykerCheckoutProcessor implements CheckoutProc
             return $this->createValidationErrorResponse($restErrorCollectionTransfer);
         }
 
-        if (!$this->hasPermissionToPlaceOrder($restCheckoutRequestAttributesTransfer->getIdCart())) {
+        $hasPermission = $this->hasPermissionToPlaceOrder(
+            $restCheckoutRequestAttributesTransfer->getIdCart(),
+            $restRequest->getRestUser()
+        );
+
+        if (!$hasPermission) {
             return $this->restApiError->addPermissionDeniedErrorResponse(
                 $this->restResourceBuilder->createRestResponse()
             );
@@ -119,12 +126,14 @@ class CheckoutProcessor extends SprykerCheckoutProcessor implements CheckoutProc
 
     /**
      * @param string $uuid
+     * @param \Generated\Shared\Transfer\RestUserTransfer $restUserTransfer
      *
      * @return bool
      */
-    protected function hasPermissionToPlaceOrder(string $uuid): bool
+    protected function hasPermissionToPlaceOrder(string $uuid, RestUserTransfer $restUserTransfer): bool
     {
-        $quoteResponseTransfer = $this->findQuoteByUuid($uuid);
+
+        $quoteResponseTransfer = $this->findQuoteByUuid($uuid, $restUserTransfer);
         if (!$quoteResponseTransfer->getIsSuccessful()) {
             return false;
         }
@@ -142,13 +151,17 @@ class CheckoutProcessor extends SprykerCheckoutProcessor implements CheckoutProc
 
     /**
      * @param string $uuid
+     * @param \Generated\Shared\Transfer\RestUserTransfer $restUserTransfer
      *
      * @return \Generated\Shared\Transfer\QuoteResponseTransfer
      */
-    protected function findQuoteByUuid(string $uuid): QuoteResponseTransfer
+    protected function findQuoteByUuid(string $uuid, RestUserTransfer $restUserTransfer): QuoteResponseTransfer
     {
         return $this->cartsRestApiClient->findQuoteByUuid(
-            (new QuoteTransfer())->setUuid($uuid)
+            (new QuoteTransfer())
+                ->setUuid($uuid)
+                ->setCustomerReference($restUserTransfer->getNaturalIdentifier())
+                ->setCustomer((new CustomerTransfer())->setCustomerReference($restUserTransfer->getNaturalIdentifier()))
         );
     }
 
@@ -165,7 +178,7 @@ class CheckoutProcessor extends SprykerCheckoutProcessor implements CheckoutProc
     }
 
     /**
-     * @param string[] $orderRefCompanyUnitAddressGuierences
+     * @param string[] $orderReferences
      *
      * @return \Spryker\Glue\GlueApplication\Rest\JsonApi\RestResponseInterface
      */
