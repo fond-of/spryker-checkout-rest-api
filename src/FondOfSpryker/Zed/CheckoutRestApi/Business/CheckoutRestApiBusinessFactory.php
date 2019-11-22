@@ -29,6 +29,7 @@ class CheckoutRestApiBusinessFactory extends SprykerCheckoutRestApiBusinessFacto
             $this->getQuoteFacade(),
             $this->getCalculationFacade(),
             $this->getQuoteMapperPlugins(),
+            $this->getChildQuoteMapperPlugins(),
             $this->getCheckoutDataValidatorPlugins(),
             $this->createQuoteCreatorByDeliveryDate(),
             $this->getQuoteFacadeReal()
@@ -76,5 +77,13 @@ class CheckoutRestApiBusinessFactory extends SprykerCheckoutRestApiBusinessFacto
     public function getQuoteFacadeReal(): QuoteFacadeInterface
     {
         return $this->getProvidedDependency(CheckoutRestApiDependencyProvider::FACADE_QUOTE_REAL);
+    }
+
+    /**
+     * @return \Spryker\Zed\CheckoutRestApiExtension\Dependency\Plugin\QuoteMapperPluginInterface[]
+     */
+    public function getChildQuoteMapperPlugins(): array
+    {
+        return $this->getProvidedDependency(CheckoutRestApiDependencyProvider::PLUGINS_CHILD_QUOTE_MAPPER);
     }
 }
