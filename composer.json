@@ -4,7 +4,8 @@
   "description": "FondOf b2b checkout rest api module",
   "license": "MIT",
   "require": {
-    "php": ">=7.1"
+    "php": ">=7.1",
+    "fond-of-spryker/company-user-reference": "dev-master"
   },
   "require-dev": {
     "spryker/code-sniffer": "^0.12",

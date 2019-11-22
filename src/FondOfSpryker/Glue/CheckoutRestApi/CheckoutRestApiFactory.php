@@ -1,10 +1,10 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace FondOfSpryker\Glue\CheckoutRestApi;
 
-use FondOfSpryker\Client\CompanyUsersRestApi\CompanyUsersRestApiClientInterface;
+use FondOfSpryker\Client\CompanyUserReference\CompanyUserReferenceClientInterface;
 use FondOfSpryker\Glue\CheckoutRestApi\Processor\Checkout\CheckoutProcessor;
 use FondOfSpryker\Glue\CheckoutRestApi\Processor\Checkout\CheckoutProcessorInterface;
 use FondOfSpryker\Glue\CheckoutRestApi\Processor\Validation\RestApiError;
@@ -30,7 +30,7 @@ class CheckoutRestApiFactory extends SprykerCheckoutRestApiFactory
             $this->createCheckoutRequestValidator(),
             $this->createRestCheckoutErrorMapper(),
             $this->createCheckoutResponseMapper(),
-            $this->getCompanyUserRestApiClient(),
+            $this->getCompanyUserReferenceClient(),
             $this->getCartsRestApiClient(),
             $this->getRestApiError()
         );
@@ -45,18 +45,22 @@ class CheckoutRestApiFactory extends SprykerCheckoutRestApiFactory
     }
 
     /**
+     * @throws
+     *
      * @return \Spryker\Client\CartsRestApi\CartsRestApiClientInterface
      */
     protected function getCartsRestApiClient(): CartsRestApiClientInterface
     {
-        return $this->getProvidedDependency(CheckoutRestApiDependencyProvider::CLIENT_REST_CARTS);
+        return $this->getProvidedDependency(CheckoutRestApiDependencyProvider::CLIENT_CARTS_REST_API);
     }
 
     /**
-     * @return \FondOfSpryker\Client\CompanyUsersRestApi\CompanyUsersRestApiClientInterface
+     * @throws
+     *
+     * @return \FondOfSpryker\Client\CompanyUserReference\CompanyUserReferenceClientInterface
      */
-    protected function getCompanyUserRestApiClient(): CompanyUsersRestApiClientInterface
+    protected function getCompanyUserReferenceClient(): CompanyUserReferenceClientInterface
     {
-        return $this->getProvidedDependency(CheckoutRestApiDependencyProvider::CLIENT_REST_COMPANY_USER);
+        return $this->getProvidedDependency(CheckoutRestApiDependencyProvider::CLIENT_COMPANY_USER_REFERENCE);
     }
 }

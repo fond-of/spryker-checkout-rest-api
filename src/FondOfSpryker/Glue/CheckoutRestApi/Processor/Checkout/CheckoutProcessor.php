@@ -1,12 +1,12 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace FondOfSpryker\Glue\CheckoutRestApi\Processor\Checkout;
 
 use FondOfSpryker\Client\CheckoutPermission\Plugin\Permission\PlaceOrderPermissionPlugin;
 use FondOfSpryker\Client\CheckoutRestApi\CheckoutRestApiClientInterface;
-use FondOfSpryker\Client\CompanyUsersRestApi\CompanyUsersRestApiClientInterface;
+use FondOfSpryker\Client\CompanyUserReference\CompanyUserReferenceClientInterface;
 use FondOfSpryker\Glue\CheckoutRestApi\Processor\Validation\RestApiErrorInterface;
 use Generated\Shared\Transfer\CompanyUserResponseTransfer;
 use Generated\Shared\Transfer\CompanyUserTransfer;
@@ -18,6 +18,7 @@ use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
 use Generated\Shared\Transfer\RestUserTransfer;
 use Spryker\Client\CartsRestApi\CartsRestApiClientInterface;
 use Spryker\Glue\CheckoutRestApi\CheckoutRestApiConfig;
+use Spryker\Glue\CheckoutRestApi\Processor\Checkout\CheckoutProcessor as SprykerCheckoutProcessor;
 use Spryker\Glue\CheckoutRestApi\Processor\Checkout\CheckoutResponseMapperInterface;
 use Spryker\Glue\CheckoutRestApi\Processor\Error\RestCheckoutErrorMapperInterface;
 use Spryker\Glue\CheckoutRestApi\Processor\RequestAttributesExpander\CheckoutRequestAttributesExpanderInterface;
@@ -25,7 +26,6 @@ use Spryker\Glue\CheckoutRestApi\Processor\Validator\CheckoutRequestValidatorInt
 use Spryker\Glue\GlueApplication\Rest\JsonApi\RestResourceBuilderInterface;
 use Spryker\Glue\GlueApplication\Rest\JsonApi\RestResponseInterface;
 use Spryker\Glue\GlueApplication\Rest\Request\Data\RestRequestInterface;
-use Spryker\Glue\CheckoutRestApi\Processor\Checkout\CheckoutProcessor as SprykerCheckoutProcessor;
 use Spryker\Glue\Kernel\PermissionAwareTrait;
 
 class CheckoutProcessor extends SprykerCheckoutProcessor implements CheckoutProcessorInterface
@@ -38,9 +38,9 @@ class CheckoutProcessor extends SprykerCheckoutProcessor implements CheckoutProc
     protected $fondOfCheckoutRestApiClient;
 
     /**
-     * @var \FondOfSpryker\Client\CompanyUsersRestApi\CompanyUsersRestApiClientInterface
+     * @var \FondOfSpryker\Client\CompanyUserReference\CompanyUserReferenceClientInterface
      */
-    protected $companyUsersRestApiClient;
+    protected $companyUserReferenceClient;
 
     /**
      * @var \Spryker\Client\CartsRestApi\CartsRestApiClientInterface
@@ -59,7 +59,7 @@ class CheckoutProcessor extends SprykerCheckoutProcessor implements CheckoutProc
      * @param \Spryker\Glue\CheckoutRestApi\Processor\Validator\CheckoutRequestValidatorInterface $checkoutRequestValidator
      * @param \Spryker\Glue\CheckoutRestApi\Processor\Error\RestCheckoutErrorMapperInterface $restCheckoutErrorMapper
      * @param \Spryker\Glue\CheckoutRestApi\Processor\Checkout\CheckoutResponseMapperInterface $checkoutResponseMapper
-     * @param \FondOfSpryker\Client\CompanyUsersRestApi\CompanyUsersRestApiClientInterface $companyUsersRestApiClient
+     * @param \FondOfSpryker\Client\CompanyUserReference\CompanyUserReferenceClientInterface $companyUserReferenceClient
      * @param \Spryker\Client\CartsRestApi\CartsRestApiClientInterface $cartsRestApiClient
      * @param \FondOfSpryker\Glue\CheckoutRestApi\Processor\Validation\RestApiErrorInterface $restApiError
      */
@@ -70,7 +70,7 @@ class CheckoutProcessor extends SprykerCheckoutProcessor implements CheckoutProc
         CheckoutRequestValidatorInterface $checkoutRequestValidator,
         RestCheckoutErrorMapperInterface $restCheckoutErrorMapper,
         CheckoutResponseMapperInterface $checkoutResponseMapper,
-        CompanyUsersRestApiClientInterface $companyUsersRestApiClient,
+        CompanyUserReferenceClientInterface $companyUserReferenceClient,
         CartsRestApiClientInterface $cartsRestApiClient,
         RestApiErrorInterface $restApiError
     ) {
@@ -84,7 +84,7 @@ class CheckoutProcessor extends SprykerCheckoutProcessor implements CheckoutProc
         );
 
         $this->fondOfCheckoutRestApiClient = $fondOfCheckoutRestApiClient;
-        $this->companyUsersRestApiClient = $companyUsersRestApiClient;
+        $this->companyUserReferenceClient = $companyUserReferenceClient;
         $this->cartsRestApiClient = $cartsRestApiClient;
         $this->restApiError = $restApiError;
     }
@@ -172,7 +172,7 @@ class CheckoutProcessor extends SprykerCheckoutProcessor implements CheckoutProc
      */
     protected function findCompanyUserByUuid(string $companyUserReference): CompanyUserResponseTransfer
     {
-        return $this->companyUsersRestApiClient->findCompanyUserByCompanyUserReference(
+        return $this->companyUserReferenceClient->findCompanyUserByCompanyUserReference(
             (new CompanyUserTransfer())->setCompanyUserReference($companyUserReference)
         );
     }

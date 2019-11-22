@@ -1,19 +1,19 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace FondOfSpryker\Glue\CheckoutRestApi;
 
-use Spryker\Glue\Kernel\Container;
 use Spryker\Glue\CheckoutRestApi\CheckoutRestApiDependencyProvider as SprykerCheckoutRestApiDependencyProvider;
+use Spryker\Glue\Kernel\Container;
 
 /**
  * @method \FondOfSpryker\Glue\CheckoutRestApi\CheckoutRestApiConfig getConfig()
  */
 class CheckoutRestApiDependencyProvider extends SprykerCheckoutRestApiDependencyProvider
 {
-    public const CLIENT_REST_COMPANY_USER = 'CLIENT_REST_COMPANY_USER';
-    public const CLIENT_REST_CARTS = 'CLIENT_REST_CARTS';
+    public const CLIENT_COMPANY_USER_REFERENCE = 'CLIENT_COMPANY_USER_REFERENCE';
+    public const CLIENT_CARTS_REST_API = 'CLIENT_CARTS_REST_API';
 
     /**
      * @param \Spryker\Glue\Kernel\Container $container
@@ -24,7 +24,7 @@ class CheckoutRestApiDependencyProvider extends SprykerCheckoutRestApiDependency
     {
         $container = parent::provideDependencies($container);
 
-        $container = $this->addCompanyRestApiClient($container);
+        $container = $this->addCompanyUserReferenceClient($container);
         $container = $this->addCartsRestApiClient($container);
 
         return $container;
@@ -35,10 +35,10 @@ class CheckoutRestApiDependencyProvider extends SprykerCheckoutRestApiDependency
      *
      * @return \Spryker\Glue\Kernel\Container
      */
-    protected function addCompanyRestApiClient(Container $container): Container
+    protected function addCompanyUserReferenceClient(Container $container): Container
     {
-        $container[static::CLIENT_REST_COMPANY_USER] = static function (Container $container) {
-            return $container->getLocator()->companyUsersRestApi()->client();
+        $container[static::CLIENT_COMPANY_USER_REFERENCE] = static function (Container $container) {
+            return $container->getLocator()->companyUserReference()->client();
         };
 
         return $container;
@@ -51,7 +51,7 @@ class CheckoutRestApiDependencyProvider extends SprykerCheckoutRestApiDependency
      */
     protected function addCartsRestApiClient(Container $container): Container
     {
-        $container[static::CLIENT_REST_CARTS] = static function (Container $container) {
+        $container[static::CLIENT_CARTS_REST_API] = static function (Container $container) {
             return $container->getLocator()->cartsRestApi()->client();
         };
 
