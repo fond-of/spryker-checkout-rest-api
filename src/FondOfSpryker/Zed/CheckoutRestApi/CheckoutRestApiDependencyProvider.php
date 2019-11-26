@@ -14,6 +14,8 @@ class CheckoutRestApiDependencyProvider extends SprykerCheckoutRestApiDependency
     public const FACADE_MULTI_CART = 'FACADE_MULTI_CART';
     public const FACADE_QUOTE_REAL = 'FACADE_QUOTE_REAL';
 
+    public const PLUGINS_CHILD_QUOTE_MAPPER = 'PLUGINS_CHILD_QUOTE_MAPPER';
+
     /**
      * @param \Spryker\Zed\Kernel\Container $container
      *
@@ -26,6 +28,7 @@ class CheckoutRestApiDependencyProvider extends SprykerCheckoutRestApiDependency
         $container = $this->addPersistentCartFacade($container);
         $container = $this->addMultiCartFacade($container);
         $container = $this->addQuoteFacadeReal($container);
+        $container = $this->addChildQuoteMapperPlugins($container);
 
         return $container;
     }
@@ -70,5 +73,27 @@ class CheckoutRestApiDependencyProvider extends SprykerCheckoutRestApiDependency
         };
 
         return $container;
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    protected function addChildQuoteMapperPlugins(Container $container): Container
+    {
+        $container[static::PLUGINS_CHILD_QUOTE_MAPPER] = function () {
+            return $this->getChildQuoteMapperPlugins();
+        };
+
+        return $container;
+    }
+
+    /**
+     * @return \FondOfSpryker\Zed\OrderSplitsRestApiExtension\Dependency\Plugin\QuoteMapperPluginInterface[]
+     */
+    protected function getChildQuoteMapperPlugins(): array
+    {
+        return [];
     }
 }

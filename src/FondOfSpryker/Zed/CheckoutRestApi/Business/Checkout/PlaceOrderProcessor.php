@@ -10,6 +10,7 @@ use Generated\Shared\Transfer\QuoteCollectionTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RestCheckoutErrorTransfer;
 use Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer;
+use Generated\Shared\Transfer\RestOrderRequestAttributesTransfer;
 use Propel\Runtime\Propel;
 use Spryker\Glue\CheckoutRestApi\CheckoutRestApiConfig;
 use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
@@ -27,6 +28,11 @@ use RuntimeException;
 
 class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrderProcessorInterface
 {
+    /**
+     * @var array
+     */
+    protected $childQuoteMapperPlugins;
+
     /**
      * @var \Spryker\Zed\Quote\Business\QuoteFacadeInterface
      */
@@ -60,11 +66,13 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
         CheckoutRestApiToQuoteFacadeInterface $quoteFacade,
         CheckoutRestApiToCalculationFacadeInterface $calculationFacade,
         array $quoteMapperPlugins,
+        array $childQuoteMapperPlugins,
         array $checkoutDataValidatorPlugins,
         QuoteCreatorByDeliveryDateInterface $quoteCreatorByDeliveryDate,
         QuoteFacadeInterface $quoteFacadeReal
     ) {
         parent::__construct($quoteReader, $cartFacade, $checkoutFacade, $quoteFacade, $calculationFacade, $quoteMapperPlugins, $checkoutDataValidatorPlugins);
+        $this->childQuoteMapperPlugins = $childQuoteMapperPlugins;
         $this->quoteCreatorByDeliveryDate = $quoteCreatorByDeliveryDate;
         $this->invalidRestCheckoutResponseTransfers = new ArrayObject();
         $this->quoteFacadeReal = $quoteFacadeReal;
@@ -85,10 +93,10 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
         $connection = Propel::getConnection();
         $connection->beginTransaction();
 
+        $originalQuoteTransfer = $this->prepareQuoteTransfer($restCheckoutRequestAttributesTransfer, $originalQuoteTransfer);
+
         // split original, create and persist child quotes.
-        $invalidatedQuoteCollectionTransfer = $this->quoteCreatorByDeliveryDate->createAndPersistChildQuotesByDeliveryDate(
-            $originalQuoteTransfer = $this->recalculateQuote($originalQuoteTransfer)
-        );
+        $invalidatedQuoteCollectionTransfer = $this->quoteCreatorByDeliveryDate->createAndPersistChildQuotesByDeliveryDate($originalQuoteTransfer);
 
         $checkoutResponseQuoteCollectionTransfer = null;
         try {
@@ -100,7 +108,9 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
 
             // Run mapper plugins and recalculate child quotes
             $validatedQuoteTransferCollection = $this->prepareQuoteCollectionTransfer(
-                $restCheckoutRequestAttributesTransfer, $validatedQuoteTransferCollection
+                $restCheckoutRequestAttributesTransfer,
+                $validatedQuoteTransferCollection,
+                $originalQuoteTransfer
             );
 
             // place orders
@@ -366,19 +376,29 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
     /**
      * @param \Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer
      * @param \Generated\Shared\Transfer\QuoteCollectionTransfer $quoteCollectionTransfer
+     * @param \Generated\Shared\Transfer\QuoteTransfer $origianlQuoteTransfer
      *
      * @return \Generated\Shared\Transfer\QuoteCollectionTransfer
      */
     protected function prepareQuoteCollectionTransfer(
         RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer,
-        QuoteCollectionTransfer $quoteCollectionTransfer
+        QuoteCollectionTransfer $quoteCollectionTransfer,
+        QuoteTransfer $originalQuoteTransfer
     ): QuoteCollectionTransfer {
 
         $quoteTransfers = new ArrayObject();
+        $restOrderRequestAttributesTransfer = (new RestOrderRequestAttributesTransfer())
+            ->fromArray($restCheckoutRequestAttributesTransfer->toArray(), true);
         foreach ($quoteCollectionTransfer->getQuotes() as $quoteTransfer) {
-            $quoteTransfers->append(
-                $this->prepareQuoteTransfer($restCheckoutRequestAttributesTransfer, $quoteTransfer)
+            $quoteTransfer = $this->prepareQuoteTransfer($restCheckoutRequestAttributesTransfer, $quoteTransfer);
+            $quoteTransfer = $this->doPostPrepareChildQuoteTransfer(
+                $restOrderRequestAttributesTransfer,
+                $quoteCollectionTransfer,
+                $quoteTransfer,
+                $originalQuoteTransfer
             );
+
+            $quoteTransfers->append($quoteTransfer);
         }
 
         $quoteCollectionTransfer->setQuotes($quoteTransfers);
@@ -397,6 +417,36 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
         QuoteTransfer $quoteTransfer
     ): QuoteTransfer {
         $quoteTransfer = $this->mapRestCheckoutRequestAttributesToQuote($restCheckoutRequestAttributesTransfer, $quoteTransfer);
+        $quoteTransfer = $this->recalculateQuote($quoteTransfer);
+
+        return $quoteTransfer;
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\RestOrderRequestAttributesTransfer $restOrderRequestAttributesTransfer
+     * @param \Generated\Shared\Transfer\QuoteCollectionTransfer $quoteCollectionTransfer
+     * @param \Generated\Shared\Transfer\QuoteTransfer $quoteTransfer
+     * @param \Generated\Shared\Transfer\QuoteTransfer $originalQuoteTransfer
+     * 
+     * @return \Generated\Shared\Transfer\QuoteTransfer
+     */
+    protected function doPostPrepareChildQuoteTransfer(
+        RestOrderRequestAttributesTransfer $restOrderRequestAttributesTransfer,
+        QuoteCollectionTransfer $quoteCollectionTransfer,
+        QuoteTransfer $quoteTransfer,
+        QuoteTransfer $originalQuoteTransfer
+    ): QuoteTransfer {
+
+        foreach ($this->childQuoteMapperPlugins as $childQuoteMapperPlugin) {
+            $quoteTransfer = $childQuoteMapperPlugin
+                ->map(
+                    $restOrderRequestAttributesTransfer,
+                    $quoteCollectionTransfer,
+                    $quoteTransfer,
+                    $originalQuoteTransfer
+                );
+        }
+
         $quoteTransfer = $this->recalculateQuote($quoteTransfer);
 
         return $quoteTransfer;
