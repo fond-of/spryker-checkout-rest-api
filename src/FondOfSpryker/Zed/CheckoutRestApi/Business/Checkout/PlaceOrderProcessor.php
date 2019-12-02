@@ -387,12 +387,10 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
     ): QuoteCollectionTransfer {
 
         $quoteTransfers = new ArrayObject();
-        $restOrderRequestAttributesTransfer = (new RestOrderRequestAttributesTransfer())
-            ->fromArray($restCheckoutRequestAttributesTransfer->toArray(), true);
         foreach ($quoteCollectionTransfer->getQuotes() as $quoteTransfer) {
             $quoteTransfer = $this->prepareQuoteTransfer($restCheckoutRequestAttributesTransfer, $quoteTransfer);
             $quoteTransfer = $this->doPostPrepareChildQuoteTransfer(
-                $restOrderRequestAttributesTransfer,
+                $restCheckoutRequestAttributesTransfer,
                 $quoteCollectionTransfer,
                 $quoteTransfer,
                 $originalQuoteTransfer
@@ -423,15 +421,15 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
     }
 
     /**
-     * @param \Generated\Shared\Transfer\RestOrderRequestAttributesTransfer $restOrderRequestAttributesTransfer
+     * @param \Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer
      * @param \Generated\Shared\Transfer\QuoteCollectionTransfer $quoteCollectionTransfer
      * @param \Generated\Shared\Transfer\QuoteTransfer $quoteTransfer
      * @param \Generated\Shared\Transfer\QuoteTransfer $originalQuoteTransfer
-     * 
+     *
      * @return \Generated\Shared\Transfer\QuoteTransfer
      */
     protected function doPostPrepareChildQuoteTransfer(
-        RestOrderRequestAttributesTransfer $restOrderRequestAttributesTransfer,
+        RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer,
         QuoteCollectionTransfer $quoteCollectionTransfer,
         QuoteTransfer $quoteTransfer,
         QuoteTransfer $originalQuoteTransfer
@@ -440,7 +438,7 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
         foreach ($this->childQuoteMapperPlugins as $childQuoteMapperPlugin) {
             $quoteTransfer = $childQuoteMapperPlugin
                 ->map(
-                    $restOrderRequestAttributesTransfer,
+                    $restCheckoutRequestAttributesTransfer,
                     $quoteCollectionTransfer,
                     $quoteTransfer,
                     $originalQuoteTransfer
