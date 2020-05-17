@@ -45,8 +45,6 @@ class CheckoutRestApiFactory extends SprykerCheckoutRestApiFactory
     }
 
     /**
-     * @throws
-     *
      * @return \Spryker\Client\CartsRestApi\CartsRestApiClientInterface
      */
     protected function getCartsRestApiClient(): CartsRestApiClientInterface
@@ -55,8 +53,6 @@ class CheckoutRestApiFactory extends SprykerCheckoutRestApiFactory
     }
 
     /**
-     * @throws
-     *
      * @return \FondOfSpryker\Client\CompanyUserReference\CompanyUserReferenceClientInterface
      */
     protected function getCompanyUserReferenceClient(): CompanyUserReferenceClientInterface

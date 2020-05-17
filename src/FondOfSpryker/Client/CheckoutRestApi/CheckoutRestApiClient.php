@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace FondOfSpryker\Client\CheckoutRestApi;
 
@@ -9,7 +9,7 @@ use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
 use Spryker\Client\CheckoutRestApi\CheckoutRestApiClient as SprykerCheckoutRestApiClient;
 
 /**
- * @method \FondOfspryker\Client\CheckoutRestApi\CheckoutRestApiFactory getFactory()
+ * @method \FondOfSpryker\Client\CheckoutRestApi\CheckoutRestApiFactory getFactory()
  */
 class CheckoutRestApiClient extends SprykerCheckoutRestApiClient implements CheckoutRestApiClientInterface
 {
@@ -18,8 +18,10 @@ class CheckoutRestApiClient extends SprykerCheckoutRestApiClient implements Chec
      *
      * @return \Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer
      */
-    public function placeOrderSplit(RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestCheckoutMultipleResponseTransfer
-    {
-        return $this->getFactory()->createFondOfCheckoutRestApiZedStub()->placeOrderSplit($restCheckoutRequestAttributesTransfer);
+    public function placeOrderSplit(
+        RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer
+    ): RestCheckoutMultipleResponseTransfer {
+        return $this->getFactory()
+            ->createFondOfCheckoutRestApiZedStub()->placeOrderSplit($restCheckoutRequestAttributesTransfer);
     }
 }

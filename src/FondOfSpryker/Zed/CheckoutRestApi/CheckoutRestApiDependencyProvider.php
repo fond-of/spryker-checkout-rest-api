@@ -2,8 +2,8 @@
 
 namespace FondOfSpryker\Zed\CheckoutRestApi;
 
-use Spryker\Zed\Kernel\Container;
 use Spryker\Zed\CheckoutRestApi\CheckoutRestApiDependencyProvider as SprykerCheckoutRestApiDependencyProvider;
+use Spryker\Zed\Kernel\Container;
 
 /**
  * @method \Spryker\Zed\CheckoutRestApi\CheckoutRestApiConfig getConfig()
@@ -90,7 +90,7 @@ class CheckoutRestApiDependencyProvider extends SprykerCheckoutRestApiDependency
     }
 
     /**
-     * @return \FondOfSpryker\Zed\OrderSplitsRestApiExtension\Dependency\Plugin\QuoteMapperPluginInterface[]
+     * @return \FondOfSpryker\Zed\CheckoutRestApiExtension\Dependency\Plugin\ChildQuoteMapperPluginInterface[]
      */
     protected function getChildQuoteMapperPlugins(): array
     {
