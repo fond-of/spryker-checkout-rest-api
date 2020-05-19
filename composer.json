@@ -5,7 +5,10 @@
   "license": "MIT",
   "require": {
     "php": ">=7.1",
-    "fond-of-spryker/company-user-reference": "dev-master"
+    "fond-of-spryker/checkout-rest-api-extension": "dev-master",
+    "fond-of-spryker/company-user-reference": "dev-master",
+    "spryker/checkout-rest-api": "^1.1.0 || ^2.0.0 || ^3.0.0",
+    "spryker/multi-cart": "^1.0.0"
   },
   "require-dev": {
     "spryker/code-sniffer": "^0.12",
