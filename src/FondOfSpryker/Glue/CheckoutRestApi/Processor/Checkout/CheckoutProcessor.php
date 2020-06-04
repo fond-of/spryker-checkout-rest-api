@@ -95,8 +95,10 @@ class CheckoutProcessor extends SprykerCheckoutProcessor implements CheckoutProc
      *
      * @return \Spryker\Glue\GlueApplication\Rest\JsonApi\RestResponseInterface
      */
-    public function placeOrderSplit(RestRequestInterface $restRequest, RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestResponseInterface
-    {
+    public function placeOrderSplit(
+        RestRequestInterface $restRequest,
+        RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer
+    ): RestResponseInterface {
         $restErrorCollectionTransfer = $this->checkoutRequestValidator->validateCheckoutRequest($restRequest, $restCheckoutRequestAttributesTransfer);
         if ($restErrorCollectionTransfer->getRestErrors()->count()) {
             return $this->createValidationErrorResponse($restErrorCollectionTransfer);
@@ -132,7 +134,6 @@ class CheckoutProcessor extends SprykerCheckoutProcessor implements CheckoutProc
      */
     protected function hasPermissionToPlaceOrder(string $uuid, RestUserTransfer $restUserTransfer): bool
     {
-
         $quoteResponseTransfer = $this->findQuoteByUuid($uuid, $restUserTransfer);
         if (!$quoteResponseTransfer->getIsSuccessful()) {
             return false;

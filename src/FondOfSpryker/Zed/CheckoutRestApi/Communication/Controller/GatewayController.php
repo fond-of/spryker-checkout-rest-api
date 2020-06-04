@@ -4,7 +4,6 @@ namespace FondOfSpryker\Zed\CheckoutRestApi\Communication\Controller;
 
 use Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer;
 use Generated\Shared\Transfer\RestCheckoutRequestAttributesTransfer;
-
 use Spryker\Zed\CheckoutRestApi\Communication\Controller\GatewayController as SprykerGatewayController;
 
 /**

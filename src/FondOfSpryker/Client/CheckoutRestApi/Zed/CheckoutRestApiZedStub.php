@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace FondOfSpryker\Client\CheckoutRestApi\Zed;
 
@@ -15,8 +15,9 @@ class CheckoutRestApiZedStub extends SprykerCheckoutRestApiZedStub implements Ch
      *
      * @return \Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer
      */
-    public function placeOrderSplit(RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer): RestCheckoutMultipleResponseTransfer
-    {
+    public function placeOrderSplit(
+        RestCheckoutRequestAttributesTransfer $restCheckoutRequestAttributesTransfer
+    ): RestCheckoutMultipleResponseTransfer {
         /** @var \Generated\Shared\Transfer\RestCheckoutMultipleResponseTransfer $restCheckoutResponseTransfer */
         $restCheckoutResponseTransfer = $this->zedRequestClient->call('/checkout-rest-api/gateway/place-order-split', $restCheckoutRequestAttributesTransfer);
 
