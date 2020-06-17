@@ -370,7 +370,7 @@ class PlaceOrderProcessor extends SprykerPlaceOrderProcessor implements PlaceOrd
             $checkoutResponseTransfer = $this->executePlaceOrder($quoteTransfer);
 
             // create invalid rest checkout response transfers and append them to the list.
-            if (!$checkoutResponseTransfer->getIsSuccess()) {
+            if (!$checkoutResponseTransfer->getIsSuccess() || $checkoutResponseTransfer->getErrors()->count() > 0) {
                 $this->addInvalidRestCheckoutResponseTransfer(
                     $this->createPlaceOrderErrorResponse($checkoutResponseTransfer)
                 );
