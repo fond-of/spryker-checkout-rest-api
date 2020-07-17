@@ -135,6 +135,7 @@ class CheckoutProcessor extends SprykerCheckoutProcessor implements CheckoutProc
     protected function hasPermissionToPlaceOrder(string $uuid, RestUserTransfer $restUserTransfer): bool
     {
         $quoteResponseTransfer = $this->findQuoteByUuid($uuid, $restUserTransfer);
+
         if (!$quoteResponseTransfer->getIsSuccessful()) {
             return false;
         }
