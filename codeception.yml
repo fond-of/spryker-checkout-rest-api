@@ -35,5 +35,5 @@ env:
       config:
         \FondOfCodeception\Module\Spryker:
           generate_transfer: true
-          generate_map_classes: true
+          generate_map_classes: false
           generate_propel_classes: false
